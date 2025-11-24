@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+import '../data/saved_repository.dart';
 import '../models/media_item.dart';
 import '../theme/app_colors.dart';
 
 class MovieDetailPage extends StatefulWidget {
-  const MovieDetailPage({super.key, required this.item});
+  const MovieDetailPage({super.key, required this.item, this.heroTag});
 
   final MediaItem item;
+  final String? heroTag;
 
   @override
   State<MovieDetailPage> createState() => _MovieDetailPageState();
@@ -155,11 +157,14 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
               ),
               const SizedBox(height: 14),
               Hero(
-                tag: 'poster-${item.imageUrl}-${item.title}',
-                child: _TrailerPlayer(
-                  controller: _controller,
-                  ready: _isReady,
-                  imageUrl: item.imageUrl,
+                tag: widget.heroTag ?? 'poster-${item.imageUrl}-${item.title}',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: _TrailerPlayer(
+                    controller: _controller,
+                    ready: _isReady,
+                    imageUrl: item.imageUrl,
+                  ),
                 ),
               ),
               const SizedBox(height: 14),
@@ -195,23 +200,46 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
               Row(
                 children: [
                   Expanded(
+                    flex: 2,
                     child: _ActionButton(
                       icon: Icons.play_circle_outline,
                       label: 'Watch Now',
+                      background: AppColors.accent,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _ActionButton(
-                      icon: Icons.bookmark_border,
-                      label: 'Save',
-                      onTap: () {},
+                      icon: SavedRepository.isSaved(item)
+                          ? Icons.bookmark
+                          : Icons.bookmark_border,
+                      label: SavedRepository.isSaved(item) ? 'Saved' : 'Save',
+                      onTap: () {
+                        SavedRepository.toggle(item);
+                        setState(() {});
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              SavedRepository.isSaved(item)
+                                  ? 'Added to saved'
+                                  : 'Removed from saved',
+                            ),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _ActionButton(
+                      icon: Icons.star_border,
+                      label: 'Rate',
+                      onTap: () => _showRateSheet(context),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              _RateButton(onTap: () => _showRateSheet(context)),
               const SizedBox(height: 20),
               Text(
                 'Cast',
@@ -380,7 +408,7 @@ class _TrailerPlayer extends StatelessWidget {
             alignment: Alignment.center,
             children: [
               Positioned.fill(
-                child: showVideo && controller != null
+                child: showVideo
                     ? VideoPlayer(controller!)
                     : Image.network(imageUrl, fit: BoxFit.cover),
               ),
@@ -470,11 +498,17 @@ class _Meta extends StatelessWidget {
 }
 
 class _ActionButton extends StatelessWidget {
-  const _ActionButton({required this.icon, required this.label, this.onTap});
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.background,
+  });
 
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
+  final Color? background;
 
   @override
   Widget build(BuildContext context) {
@@ -483,7 +517,7 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: const Color(0xFF2F323B),
+          color: background ?? const Color(0xFF2F323B),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -494,40 +528,6 @@ class _ActionButton extends StatelessWidget {
             Text(
               label,
               style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _RateButton extends StatelessWidget {
-  const _RateButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2F323B),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.star_border, color: Colors.white),
-            SizedBox(width: 8),
-            Text(
-              'Add Your Rate',
-              style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
               ),

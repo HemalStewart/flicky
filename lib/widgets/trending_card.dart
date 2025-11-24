@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/media_item.dart';
 import '../theme/app_colors.dart';
+import 'tap_scale.dart';
 
 class TrendingCard extends StatelessWidget {
   const TrendingCard({super.key, required this.item, this.onTap});
@@ -11,7 +12,7 @@ class TrendingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return TapScale(
       onTap: onTap,
       child: Container(
         width: 250,
@@ -27,15 +28,18 @@ class TrendingCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
                 child: Hero(
                   tag: 'trending-${item.imageUrl}-${item.title}',
-                  child: Image.network(
-                    item.imageUrl,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) return child;
-                      return Container(color: AppColors.surface);
-                    },
-                    errorBuilder: (context, error, stackTrace) =>
-                        Container(color: AppColors.surface),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: Image.network(
+                      item.imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return Container(color: AppColors.surface);
+                      },
+                      errorBuilder: (context, error, stackTrace) =>
+                          Container(color: AppColors.surface),
+                    ),
                   ),
                 ),
               ),

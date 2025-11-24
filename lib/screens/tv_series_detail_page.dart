@@ -1,17 +1,116 @@
 import 'package:flutter/material.dart';
 
+import '../data/saved_repository.dart';
 import '../data/tv_data.dart';
 import '../models/media_item.dart';
 import '../theme/app_colors.dart';
 import 'tv_season_page.dart';
 
-class TvSeriesDetailPage extends StatelessWidget {
-  const TvSeriesDetailPage({super.key, required this.item});
+class TvSeriesDetailPage extends StatefulWidget {
+  const TvSeriesDetailPage({super.key, required this.item, this.heroTag});
 
   final MediaItem item;
+  final String? heroTag;
+
+  @override
+  State<TvSeriesDetailPage> createState() => _TvSeriesDetailPageState();
+}
+
+class _TvSeriesDetailPageState extends State<TvSeriesDetailPage> {
+  double _userRating = 4.0;
+
+  void _showRateSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Rate ${widget.item.title}',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const Spacer(),
+                      Text(
+                        _userRating.toStringAsFixed(1),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: List.generate(5, (index) {
+                      final val = index + 1;
+                      return IconButton(
+                        onPressed: () =>
+                            setState(() => _userRating = val.toDouble()),
+                        icon: Icon(
+                          Icons.star,
+                          color: _userRating >= val
+                              ? AppColors.gold
+                              : Colors.white24,
+                          size: 30,
+                        ),
+                      );
+                    }),
+                  ),
+                  Slider(
+                    value: _userRating,
+                    min: 1,
+                    max: 5,
+                    divisions: 8,
+                    activeColor: AppColors.accent,
+                    inactiveColor: Colors.white24,
+                    onChanged: (v) => setState(() => _userRating = v),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'Submit',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final item = widget.item;
     final seasonList = seasonsFor(item);
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -38,7 +137,8 @@ class TvSeriesDetailPage extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Hero(
-                tag: 'trending-${item.imageUrl}-${item.title}',
+                tag:
+                    widget.heroTag ?? 'trending-${item.imageUrl}-${item.title}',
                 child: _HeroPlayer(imageUrl: item.imageUrl),
               ),
               const SizedBox(height: 14),
@@ -71,9 +171,7 @@ class TvSeriesDetailPage extends StatelessWidget {
               const SizedBox(height: 14),
               _MetaRow(item: item),
               const SizedBox(height: 16),
-              _ActionRow(),
-              const SizedBox(height: 12),
-              _RateButton(),
+              _ActionRow(item: item, onRate: _showRateSheet),
               const SizedBox(height: 18),
               Text(
                 'All Series',
@@ -247,7 +345,7 @@ class _MetaRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _Meta(icon: Icons.calendar_today, label: '18 Sep 1987'),
+          const _Meta(icon: Icons.calendar_today, label: '18 Sep 1987'),
           _Meta(icon: Icons.access_time, label: item.duration),
           _Meta(icon: Icons.grid_view, label: item.category),
         ],
@@ -281,76 +379,99 @@ class _Meta extends StatelessWidget {
 }
 
 class _ActionRow extends StatelessWidget {
+  const _ActionRow({required this.item, required this.onRate});
+
+  final MediaItem item;
+  final VoidCallback onRate;
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _ActionButton(
-            icon: Icons.play_circle_outline,
-            label: 'Watch Now',
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _ActionButton(icon: Icons.bookmark_border, label: 'Save'),
-        ),
-      ],
+    return ValueListenableBuilder<List<MediaItem>>(
+      valueListenable: SavedRepository.saved,
+      builder: (context, savedList, _) {
+        final saved = SavedRepository.isSaved(item);
+        return Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: _ActionButton(
+                icon: Icons.play_circle_outline,
+                label: 'Watch Now',
+                background: AppColors.accent,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _ActionButton(
+                icon: saved ? Icons.bookmark : Icons.bookmark_border,
+                label: saved ? 'Saved' : 'Save',
+                onTap: () {
+                  SavedRepository.toggle(item);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        SavedRepository.isSaved(item)
+                            ? 'Added to saved'
+                            : 'Removed from saved',
+                      ),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _ActionButton(
+                icon: Icons.star_border,
+                label: 'Rate',
+                onTap: onRate,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
 class _ActionButton extends StatelessWidget {
-  const _ActionButton({required this.icon, required this.label});
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    this.background,
+    this.onTap,
+  });
 
   final IconData icon;
   final String label;
+  final Color? background;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2F323B),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: Colors.white),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: background ?? const Color(0xFF2F323B),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RateButton extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2F323B),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Icon(Icons.star_border, color: Colors.white),
-          SizedBox(width: 8),
-          Text(
-            'Add Your Rate',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

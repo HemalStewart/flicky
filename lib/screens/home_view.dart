@@ -7,6 +7,7 @@ import '../widgets/category_chips.dart';
 import '../widgets/poster_card.dart';
 import '../widgets/section_header.dart';
 import '../widgets/trending_card.dart';
+import '../routes/fade_slide_route.dart';
 import 'movie_detail_page.dart';
 import 'tv_series_detail_page.dart';
 import 'profile_view.dart';
@@ -22,13 +23,13 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   String _activeCategory = 'Action';
 
-  void _openDetail(BuildContext context, MediaItem item) {
+  void _openDetail(BuildContext context, MediaItem item, String heroTag) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => item.isSeries
-            ? TvSeriesDetailPage(item: item)
-            : MovieDetailPage(item: item),
+      FadeSlideRoute(
+        page: item.isSeries
+            ? TvSeriesDetailPage(item: item, heroTag: heroTag)
+            : MovieDetailPage(item: item, heroTag: heroTag),
       ),
     );
   }
@@ -49,7 +50,7 @@ class _HomeViewState extends State<HomeView> {
                     _HomeHeader(
                       onTapSearch: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const SearchView()),
+                        FadeSlideRoute(page: const SearchView()),
                       ),
                     ),
                     const SizedBox(height: 22),
@@ -73,7 +74,11 @@ class _HomeViewState extends State<HomeView> {
                           final item = trendingItems[index];
                           return TrendingCard(
                             item: item,
-                            onTap: () => _openDetail(context, item),
+                            onTap: () => _openDetail(
+                              context,
+                              item,
+                              'trending-${item.imageUrl}-${item.title}',
+                            ),
                           );
                         },
                         separatorBuilder: (_, i) => const SizedBox(width: 14),
@@ -94,7 +99,11 @@ class _HomeViewState extends State<HomeView> {
                           final item = movieItems[index];
                           return PosterCard(
                             item: item,
-                            onTap: () => _openDetail(context, item),
+                            onTap: () => _openDetail(
+                              context,
+                              item,
+                              'poster-${item.imageUrl}-${item.title}',
+                            ),
                           );
                         },
                         separatorBuilder: (_, i) => const SizedBox(width: 16),
@@ -116,7 +125,11 @@ class _HomeViewState extends State<HomeView> {
                           return PosterCard(
                             item: item,
                             badge: item.category,
-                            onTap: () => _openDetail(context, item),
+                            onTap: () => _openDetail(
+                              context,
+                              item,
+                              'poster-${item.imageUrl}-${item.title}',
+                            ),
                           );
                         },
                         separatorBuilder: (_, i) => const SizedBox(width: 16),

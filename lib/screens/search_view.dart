@@ -4,22 +4,58 @@ import '../data/sample_data.dart';
 import '../models/media_item.dart';
 import '../theme/app_colors.dart';
 import '../widgets/grid_poster.dart';
-import '../widgets/search_bar_field.dart';
+import '../routes/fade_slide_route.dart';
 import 'movie_detail_page.dart';
+import 'tv_series_detail_page.dart';
 
-class SearchView extends StatelessWidget {
+class SearchView extends StatefulWidget {
   const SearchView({super.key});
+
+  @override
+  State<SearchView> createState() => _SearchViewState();
+}
+
+class _SearchViewState extends State<SearchView> {
+  late List<MediaItem> _items;
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _items = [...trendingItems, ...movieItems, ...seriesItems];
+  }
 
   void _openDetail(BuildContext context, MediaItem item) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => MovieDetailPage(item: item)),
+      FadeSlideRoute(
+        page: item.isSeries
+            ? TvSeriesDetailPage(
+                item: item,
+                heroTag: 'grid-${item.imageUrl}-${item.title}',
+              )
+            : MovieDetailPage(
+                item: item,
+                heroTag: 'grid-${item.imageUrl}-${item.title}',
+              ),
+      ),
     );
+  }
+
+  List<MediaItem> get _filtered {
+    if (_query.isEmpty) return _items;
+    final q = _query.toLowerCase();
+    return _items
+        .where(
+          (item) =>
+              item.title.toLowerCase().contains(q) ||
+              item.category.toLowerCase().contains(q),
+        )
+        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final items = [...trendingItems, ...movieItems, ...seriesItems];
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -44,7 +80,35 @@ class SearchView extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 10),
-              const SearchBarField(hint: 'Search'),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: AppColors.outline),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.search, color: Colors.white),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        onChanged: (v) => setState(() => _query = v),
+                        decoration: const InputDecoration(
+                          hintText: 'Search movies or series',
+                          border: InputBorder.none,
+                          hintStyle: TextStyle(color: AppColors.muted),
+                        ),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    const Icon(Icons.tune, color: Colors.white),
+                  ],
+                ),
+              ),
               const SizedBox(height: 14),
               Expanded(
                 child: GridView.builder(
@@ -55,9 +119,9 @@ class SearchView extends StatelessWidget {
                     crossAxisSpacing: 12,
                     childAspectRatio: 0.65,
                   ),
-                  itemCount: items.length,
+                  itemCount: _filtered.length,
                   itemBuilder: (context, index) {
-                    final item = items[index % items.length];
+                    final item = _filtered[index];
                     return GridPoster(
                       item: item,
                       highlight: false,

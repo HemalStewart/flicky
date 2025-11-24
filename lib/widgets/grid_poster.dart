@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/media_item.dart';
 import '../theme/app_colors.dart';
+import 'tap_scale.dart';
 
 class GridPoster extends StatelessWidget {
   const GridPoster({
@@ -14,14 +15,15 @@ class GridPoster extends StatelessWidget {
   final MediaItem item;
   final bool highlight;
   final VoidCallback? onTap;
+  static const double cornerRadius = 14;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return TapScale(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(cornerRadius),
           border: highlight
               ? Border.all(color: AppColors.accent, width: 1)
               : Border.all(color: Colors.transparent, width: 0),
@@ -36,12 +38,15 @@ class GridPoster extends StatelessWidget {
                 child: SizedBox.expand(
                   child: Hero(
                     tag: 'grid-${item.imageUrl}-${item.title}',
-                    child: Image.network(
-                      item.imageUrl,
-                      fit: BoxFit.cover,
-                      alignment: Alignment.center,
-                      errorBuilder: (context, error, stackTrace) =>
-                          Container(color: AppColors.surface),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.network(
+                        item.imageUrl,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Container(color: AppColors.surface),
+                      ),
                     ),
                   ),
                 ),

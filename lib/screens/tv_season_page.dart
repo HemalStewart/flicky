@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/saved_repository.dart';
 import '../data/tv_data.dart';
 import '../models/media_item.dart';
 import '../theme/app_colors.dart';
@@ -109,9 +110,8 @@ class TvSeasonPage extends StatelessWidget {
               const SizedBox(height: 14),
               _SeasonMeta(),
               const SizedBox(height: 16),
-              _SeasonActions(),
+              _SeasonActions(series: series),
               const SizedBox(height: 12),
-              _SeasonRate(),
               const SizedBox(height: 18),
               Container(
                 decoration: BoxDecoration(
@@ -216,45 +216,91 @@ class _SeasonMeta extends StatelessWidget {
 }
 
 class _SeasonActions extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _ActionButton(
-            icon: Icons.play_circle_outline,
-            label: 'Watch Now',
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _ActionButton(icon: Icons.bookmark_border, label: 'Save'),
-        ),
-      ],
-    );
-  }
-}
+  const _SeasonActions({required this.series});
 
-class _SeasonRate extends StatelessWidget {
+  final MediaItem series;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2F323B),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Icon(Icons.star_border, color: Colors.white),
-          SizedBox(width: 8),
-          Text(
-            'Add Your Rate',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-          ),
-        ],
-      ),
+    return ValueListenableBuilder<List<MediaItem>>(
+      valueListenable: SavedRepository.saved,
+      builder: (context, savedList, _) {
+        final saved = SavedRepository.isSaved(series);
+        return Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: _ActionButton(
+                icon: Icons.play_circle_outline,
+                label: 'Watch Now',
+                background: AppColors.accent,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _ActionButton(
+                icon: saved ? Icons.bookmark : Icons.bookmark_border,
+                label: saved ? 'Saved' : 'Save',
+                onTap: () {
+                  SavedRepository.toggle(series);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        SavedRepository.isSaved(series)
+                            ? 'Added to saved'
+                            : 'Removed from saved',
+                      ),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _ActionButton(
+                icon: Icons.star_border,
+                label: 'Rate',
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: AppColors.surface,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
+                    ),
+                    builder: (context) {
+                      return Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'Rate this season',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            SizedBox(height: 12),
+                            Text(
+                              'Thanks for rating!',
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                            SizedBox(height: 12),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -284,32 +330,42 @@ class _Meta extends StatelessWidget {
 }
 
 class _ActionButton extends StatelessWidget {
-  const _ActionButton({required this.icon, required this.label});
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    this.background,
+    this.onTap,
+  });
 
   final IconData icon;
   final String label;
+  final Color? background;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2F323B),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: Colors.white),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: background ?? const Color(0xFF2F323B),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/media_item.dart';
 import '../theme/app_colors.dart';
+import 'tap_scale.dart';
 
 class PosterCard extends StatelessWidget {
   const PosterCard({super.key, required this.item, this.badge, this.onTap});
@@ -9,15 +10,16 @@ class PosterCard extends StatelessWidget {
   final MediaItem item;
   final String? badge;
   final VoidCallback? onTap;
+  static const double cornerRadius = 14;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return TapScale(
       onTap: onTap,
       child: Container(
         width: 150,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(cornerRadius),
           color: AppColors.surface,
         ),
         child: Column(
@@ -25,19 +27,22 @@ class PosterCard extends StatelessWidget {
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(cornerRadius),
                 child: Stack(
                   children: [
                     Positioned.fill(
                       child: Hero(
                         tag: 'poster-${item.imageUrl}-${item.title}',
                         child: SizedBox.expand(
-                          child: Image.network(
-                            item.imageUrl,
-                            fit: BoxFit.cover,
-                            alignment: Alignment.center,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(color: AppColors.surface),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: Image.network(
+                              item.imageUrl,
+                              fit: BoxFit.cover,
+                              alignment: Alignment.center,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(color: AppColors.surface),
+                            ),
                           ),
                         ),
                       ),

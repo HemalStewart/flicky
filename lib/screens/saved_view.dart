@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../data/sample_data.dart';
+import '../data/saved_repository.dart';
 import '../models/media_item.dart';
 import '../theme/app_colors.dart';
 import '../widgets/saved_card.dart';
 import 'movie_detail_page.dart';
+import 'tv_series_detail_page.dart';
+import '../routes/fade_slide_route.dart';
 
 class SavedView extends StatelessWidget {
   const SavedView({super.key});
@@ -12,17 +14,23 @@ class SavedView extends StatelessWidget {
   void _openDetail(BuildContext context, MediaItem item) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => MovieDetailPage(item: item)),
+      FadeSlideRoute(
+        page: item.isSeries
+            ? TvSeriesDetailPage(
+                item: item,
+                heroTag: 'saved-${item.imageUrl}-${item.title}',
+              )
+            : MovieDetailPage(
+                item: item,
+                heroTag: 'saved-${item.imageUrl}-${item.title}',
+              ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final savedItems = List<MediaItem>.generate(
-      5,
-      (index) => movieItems[index % movieItems.length],
-    );
-
+    final savedItems = SavedRepository.saved;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -48,14 +56,27 @@ class SavedView extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: ListView.separated(
-                  itemCount: savedItems.length,
-                  separatorBuilder: (_, i) => const SizedBox(height: 14),
-                  itemBuilder: (context, index) {
-                    final item = savedItems[index];
-                    return SavedCard(
-                      item: item,
-                      onTap: () => _openDetail(context, item),
+                child: ValueListenableBuilder<List<MediaItem>>(
+                  valueListenable: savedItems,
+                  builder: (context, items, _) {
+                    if (items.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No saved items yet',
+                          style: TextStyle(color: AppColors.muted),
+                        ),
+                      );
+                    }
+                    return ListView.separated(
+                      itemCount: items.length,
+                      separatorBuilder: (_, i) => const SizedBox(height: 14),
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        return SavedCard(
+                          item: item,
+                          onTap: () => _openDetail(context, item),
+                        );
+                      },
                     );
                   },
                 ),
