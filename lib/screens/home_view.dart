@@ -190,18 +190,12 @@ class _HomeHeader extends StatelessWidget {
             context,
             FadeSlideRoute(page: const ProfileView()),
           ),
-          child: Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.outline),
-            ),
-            child: const CircleAvatar(
-              radius: 18,
-              backgroundImage: NetworkImage(
-                'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=240&q=80',
-              ),
+          child: const Hero(
+            tag: 'flicky-logo',
+            child: Image(
+              image: AssetImage('assets/images/logo.png'),
+              width: 48,
+              height: 48,
             ),
           ),
         ),

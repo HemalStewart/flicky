@@ -14,7 +14,9 @@ const trendingItems = [
     director: 'Craig Gillespie',
     tags: ['Drama', 'Crime', 'Fashion'],
     trailerUrl:
-        'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    videoUrl:
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
   ),
   MediaItem(
     title: 'Red Notice',
@@ -29,7 +31,9 @@ const trendingItems = [
     director: 'Rawson Marshall Thurber',
     tags: ['Action', 'Comedy', 'Heist'],
     trailerUrl:
-        'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    videoUrl:
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
   ),
   MediaItem(
     title: 'Avatar',
@@ -44,7 +48,9 @@ const trendingItems = [
     director: 'James Cameron',
     tags: ['Sci-Fi', 'Adventure'],
     trailerUrl:
-        'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    videoUrl:
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
   ),
 ];
 
@@ -61,6 +67,8 @@ const movieItems = [
     cast: ['Joaquin Phoenix', 'Robert De Niro', 'Zazie Beetz'],
     director: 'Todd Phillips',
     tags: ['Crime', 'Drama', 'DC'],
+    videoUrl:
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
   ),
   MediaItem(
     title: 'Interstellar',
@@ -74,6 +82,8 @@ const movieItems = [
     cast: ['Matthew McConaughey', 'Anne Hathaway', 'Jessica Chastain'],
     director: 'Christopher Nolan',
     tags: ['Sci-Fi', 'Drama', 'Space'],
+    videoUrl:
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
   ),
   MediaItem(
     title: 'Oppenheimer',
@@ -87,6 +97,8 @@ const movieItems = [
     cast: ['Cillian Murphy', 'Emily Blunt', 'Robert Downey Jr.'],
     director: 'Christopher Nolan',
     tags: ['Drama', 'Biography', 'History'],
+    videoUrl:
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
   ),
 ];
 

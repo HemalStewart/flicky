@@ -6,15 +6,23 @@ import 'menu_view.dart';
 import 'saved_view.dart';
 import 'search_view.dart';
 
-class FlickyShell extends StatelessWidget {
-  const FlickyShell({
-    super.key,
-    required this.tabIndex,
-    required this.onTabChanged,
-  });
+class FlickyShell extends StatefulWidget {
+  const FlickyShell({super.key, this.initialIndex = 0});
 
-  final int tabIndex;
-  final ValueChanged<int> onTabChanged;
+  final int initialIndex;
+
+  @override
+  State<FlickyShell> createState() => _FlickyShellState();
+}
+
+class _FlickyShellState extends State<FlickyShell> {
+  late int tabIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    tabIndex = widget.initialIndex;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +45,7 @@ class FlickyShell extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 10),
         child: FlickyNavBar(
           currentIndex: tabIndex,
-          onChanged: onTabChanged,
+          onChanged: (value) => setState(() => tabIndex = value),
           items: const [
             FlickyNavItem(icon: Icons.home_outlined, label: 'Home'),
             FlickyNavItem(icon: Icons.search, label: 'Search'),

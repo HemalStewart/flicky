@@ -5,6 +5,8 @@ import '../data/tv_data.dart';
 import '../models/media_item.dart';
 import '../theme/app_colors.dart';
 import '../widgets/tap_scale.dart';
+import '../routes/fade_slide_route.dart';
+import 'player_screen.dart';
 
 class TvSeasonPage extends StatefulWidget {
   const TvSeasonPage({super.key, required this.series, required this.season});
@@ -142,7 +144,7 @@ class _TvSeasonPageState extends State<TvSeasonPage> {
               const SizedBox(height: 14),
               _SeasonMeta(),
               const SizedBox(height: 16),
-              _SeasonActions(series: widget.series),
+              _SeasonActions(series: widget.series, season: widget.season),
               const SizedBox(height: 12),
               const SizedBox(height: 18),
               Container(
@@ -249,9 +251,10 @@ class _SeasonMeta extends StatelessWidget {
 }
 
 class _SeasonActions extends StatelessWidget {
-  const _SeasonActions({required this.series});
+  const _SeasonActions({required this.series, required this.season});
 
   final MediaItem series;
+  final SeasonInfo season;
 
   @override
   Widget build(BuildContext context) {
@@ -267,6 +270,20 @@ class _SeasonActions extends StatelessWidget {
                 icon: Icons.play_circle_outline,
                 label: 'Watch Now',
                 background: AppColors.accent,
+                onTap: () {
+                  final playUrl = series.videoUrl ?? series.trailerUrl;
+                  if (playUrl == null) return;
+                  Navigator.push(
+                    context,
+                    FadeSlideRoute(
+                      page: PlayerScreen(
+                        title: '${series.title} ${season.title}',
+                        url: playUrl,
+                        poster: season.image,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
             const SizedBox(width: 12),

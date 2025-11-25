@@ -7,6 +7,7 @@ import '../routes/fade_slide_route.dart';
 import '../theme/app_colors.dart';
 import '../widgets/tap_scale.dart';
 import 'tv_season_page.dart';
+import 'player_screen.dart';
 
 class TvSeriesDetailPage extends StatefulWidget {
   const TvSeriesDetailPage({super.key, required this.item, this.heroTag});
@@ -450,6 +451,20 @@ class _ActionRow extends StatelessWidget {
                 icon: Icons.play_circle_outline,
                 label: 'Watch Now',
                 background: AppColors.accent,
+                onTap: () {
+                  final playUrl = item.videoUrl ?? item.trailerUrl;
+                  if (playUrl == null) return;
+                  Navigator.push(
+                    context,
+                    FadeSlideRoute(
+                      page: PlayerScreen(
+                        title: item.title,
+                        url: playUrl,
+                        poster: item.imageUrl,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
             const SizedBox(width: 12),

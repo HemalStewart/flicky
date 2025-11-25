@@ -5,7 +5,9 @@ import '../widgets/background_collage.dart';
 import '../widgets/flicky_mark.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  const SplashScreen({super.key, required this.onFinish});
+
+  final VoidCallback onFinish;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -22,6 +24,9 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..forward();
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) widget.onFinish();
+    });
   }
 
   @override

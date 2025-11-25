@@ -11,6 +11,7 @@ class MediaItem {
     this.director,
     this.tags = const [],
     this.trailerUrl,
+    this.videoUrl,
     this.isSeries = false,
   });
 
@@ -25,5 +26,6 @@ class MediaItem {
   final String? director;
   final List<String> tags;
   final String? trailerUrl;
+  final String? videoUrl;
   final bool isSeries;
 }

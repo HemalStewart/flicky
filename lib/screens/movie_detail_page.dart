@@ -5,6 +5,8 @@ import '../data/saved_repository.dart';
 import '../models/media_item.dart';
 import '../theme/app_colors.dart';
 import '../widgets/tap_scale.dart';
+import '../routes/fade_slide_route.dart';
+import 'player_screen.dart';
 
 class MovieDetailPage extends StatefulWidget {
   const MovieDetailPage({super.key, required this.item, this.heroTag});
@@ -218,12 +220,26 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                 children: [
                   Expanded(
                     flex: 2,
-                    child: _ActionButton(
-                      icon: Icons.play_circle_outline,
-                      label: 'Watch Now',
-                      background: AppColors.accent,
-                    ),
-                  ),
+                child: _ActionButton(
+                  icon: Icons.play_circle_outline,
+                  label: 'Watch Now',
+                  background: AppColors.accent,
+                  onTap: () {
+                    final playUrl = item.videoUrl ?? item.trailerUrl;
+                    if (playUrl == null) return;
+                    Navigator.push(
+                      context,
+                      FadeSlideRoute(
+                        page: PlayerScreen(
+                          title: item.title,
+                          url: playUrl,
+                          poster: item.imageUrl,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _ActionButton(
@@ -421,11 +437,11 @@ class _TrailerPlayer extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: AspectRatio(
           aspectRatio: 16 / 9,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Positioned.fill(
-                child: showVideo
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned.fill(
+                  child: showVideo
                     ? VideoPlayer(controller!)
                     : Image.network(imageUrl, fit: BoxFit.cover),
               ),
@@ -438,29 +454,156 @@ class _TrailerPlayer extends StatelessWidget {
                   ),
                 ),
               ),
-              Positioned(
-                child: IconButton(
-                  onPressed: () {
-                    if (controller == null) return;
-                    if (controller!.value.isPlaying) {
-                      controller!.pause();
-                    } else {
-                      controller!.play();
-                    }
-                  },
-                  icon: Icon(
-                    controller?.value.isPlaying ?? false
-                        ? Icons.pause_circle_filled
-                        : Icons.play_circle_fill,
-                    color: Colors.white,
-                    size: 52,
+              if (controller != null)
+                Positioned(
+                  child: ValueListenableBuilder<VideoPlayerValue>(
+                    valueListenable: controller!,
+                    builder: (context, value, _) {
+                      return IconButton(
+                        onPressed: () {
+                          value.isPlaying
+                              ? controller!.pause()
+                              : controller!.play();
+                        },
+                        icon: Icon(
+                          value.isPlaying
+                              ? Icons.pause_circle_filled
+                              : Icons.play_circle_fill,
+                          color: Colors.white,
+                          size: 52,
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
+              if (showVideo)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: _InlineControls(controller: controller!),
+                ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _InlineControls extends StatelessWidget {
+  const _InlineControls({required this.controller});
+
+  final VideoPlayerController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<VideoPlayerValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        final duration = value.duration;
+        final position = value.position;
+        final hasDuration = duration.inMilliseconds > 0;
+        final progress = hasDuration
+            ? position.inMilliseconds / duration.inMilliseconds
+            : 0.0;
+
+        String fmt(Duration d) {
+          if (d.inMilliseconds <= 0) return '00:00';
+          final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+          final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+          final h = d.inHours;
+          return h > 0 ? '$h:$m:$s' : '$m:$s';
+        }
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.black54, Colors.transparent],
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      value.isPlaying ? controller.pause() : controller.play();
+                    },
+                    icon: Icon(
+                      value.isPlaying
+                          ? Icons.pause_circle_filled
+                          : Icons.play_circle_fill,
+                      color: Colors.white,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: hasDuration
+                        ? () {
+                            final target =
+                                position - const Duration(seconds: 10);
+                            controller.seekTo(
+                              target < Duration.zero
+                                  ? Duration.zero
+                                  : target,
+                            );
+                          }
+                        : null,
+                    icon: const Icon(Icons.replay_10, color: Colors.white),
+                  ),
+                  IconButton(
+                    onPressed: hasDuration
+                        ? () {
+                            final target =
+                                position + const Duration(seconds: 10);
+                            controller.seekTo(
+                              target > duration ? duration : target,
+                            );
+                          }
+                        : null,
+                    icon: const Icon(Icons.forward_10, color: Colors.white),
+                  ),
+                  IconButton(
+                    onPressed: () async {
+                      final muted = value.volume == 0;
+                      await controller.setVolume(muted ? 1.0 : 0.0);
+                    },
+                    icon: Icon(
+                      value.volume == 0 ? Icons.volume_off : Icons.volume_up,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Expanded(
+                    child: Slider(
+                      value: progress.clamp(0, 1),
+                      activeColor: AppColors.accent,
+                      inactiveColor: Colors.white24,
+                      onChanged: hasDuration
+                          ? (v) {
+                              final target = Duration(
+                                milliseconds:
+                                    (duration.inMilliseconds * v).toInt(),
+                              );
+                              controller.seekTo(target);
+                            }
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${fmt(position)} / ${fmt(duration)}',
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
