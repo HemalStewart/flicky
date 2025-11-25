@@ -4,20 +4,46 @@ import '../data/saved_repository.dart';
 import '../data/tv_data.dart';
 import '../models/media_item.dart';
 import '../theme/app_colors.dart';
+import '../widgets/tap_scale.dart';
 
-class TvSeasonPage extends StatelessWidget {
+class TvSeasonPage extends StatefulWidget {
   const TvSeasonPage({super.key, required this.series, required this.season});
 
   final MediaItem series;
   final SeasonInfo season;
 
   @override
+  State<TvSeasonPage> createState() => _TvSeasonPageState();
+}
+
+class _TvSeasonPageState extends State<TvSeasonPage> {
+  final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      setState(() {
+        _scrollOffset = _scrollController.offset.clamp(0, 140);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final episodes = episodesForSeason(season);
+    final episodes = episodesForSeason(widget.season);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
+          controller: _scrollController,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -26,7 +52,10 @@ class TvSeasonPage extends StatelessWidget {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.maybePop(context),
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -38,52 +67,55 @@ class TvSeasonPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              Hero(
-                tag: 'season-${season.image}-${season.title}',
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black45,
-                        blurRadius: 18,
-                        offset: Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Image.network(
-                          season.image,
-                          height: 200,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
+              Transform.translate(
+                offset: Offset(0, -_scrollOffset * 0.12),
+                child: Hero(
+                  tag: 'season-${widget.season.image}-${widget.season.title}',
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black45,
+                          blurRadius: 18,
+                          offset: Offset(0, 8),
                         ),
-                      ),
-                      Container(
-                        height: 70,
-                        width: 70,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black54,
+                      ],
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.network(
+                            widget.season.image,
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.play_arrow,
-                          color: Colors.white,
-                          size: 40,
+                        Container(
+                          height: 70,
+                          width: 70,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black54,
+                          ),
+                          child: const Icon(
+                            Icons.play_arrow,
+                            color: Colors.white,
+                            size: 40,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 14),
               Center(
                 child: Text(
-                  '${series.title} ${season.title} Episode 01',
+                  '${widget.series.title} ${widget.season.title} Episode 01',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
@@ -110,7 +142,7 @@ class TvSeasonPage extends StatelessWidget {
               const SizedBox(height: 14),
               _SeasonMeta(),
               const SizedBox(height: 16),
-              _SeasonActions(series: series),
+              _SeasonActions(series: widget.series),
               const SizedBox(height: 12),
               const SizedBox(height: 18),
               Container(
@@ -200,8 +232,9 @@ class _SeasonMeta extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF2F323B),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white10),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -241,6 +274,7 @@ class _SeasonActions extends StatelessWidget {
               child: _ActionButton(
                 icon: saved ? Icons.bookmark : Icons.bookmark_border,
                 label: saved ? 'Saved' : 'Save',
+                foreground: Theme.of(context).colorScheme.onSurface,
                 onTap: () {
                   SavedRepository.toggle(series);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -261,10 +295,11 @@ class _SeasonActions extends StatelessWidget {
               child: _ActionButton(
                 icon: Icons.star_border,
                 label: 'Rate',
+                foreground: Theme.of(context).colorScheme.onSurface,
                 onTap: () {
                   showModalBottomSheet(
                     context: context,
-                    backgroundColor: AppColors.surface,
+                    backgroundColor: Theme.of(context).cardColor,
                     shape: const RoundedRectangleBorder(
                       borderRadius: BorderRadius.vertical(
                         top: Radius.circular(20),
@@ -313,14 +348,16 @@ class _Meta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = Theme.of(context).iconTheme.color ?? Colors.white;
+    final textColor = Theme.of(context).colorScheme.onSurface;
     return Row(
       children: [
-        Icon(icon, color: Colors.white),
+        Icon(icon, color: iconColor),
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: textColor,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -335,32 +372,39 @@ class _ActionButton extends StatelessWidget {
     required this.label,
     this.background,
     this.onTap,
+    this.foreground,
   });
 
   final IconData icon;
   final String label;
   final Color? background;
   final VoidCallback? onTap;
+  final Color? foreground;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final textColor = background != null
+        ? Colors.white
+        : foreground ?? Theme.of(context).colorScheme.onSurface;
+    final iconColor = background != null ? Colors.white : textColor;
+    return TapScale(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: background ?? const Color(0xFF2F323B),
+          color: background ?? Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white10),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white),
+            Icon(icon, color: iconColor),
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: textColor,
                 fontWeight: FontWeight.w700,
               ),
             ),

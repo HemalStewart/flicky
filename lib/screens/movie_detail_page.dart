@@ -4,6 +4,7 @@ import 'package:video_player/video_player.dart';
 import '../data/saved_repository.dart';
 import '../models/media_item.dart';
 import '../theme/app_colors.dart';
+import '../widgets/tap_scale.dart';
 
 class MovieDetailPage extends StatefulWidget {
   const MovieDetailPage({super.key, required this.item, this.heroTag});
@@ -19,10 +20,17 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
   VideoPlayerController? _controller;
   bool _isReady = false;
   double _userRating = 4.0;
+  final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(() {
+      setState(() {
+        _scrollOffset = _scrollController.offset.clamp(0, 140);
+      });
+    });
     final trailer =
         widget.item.trailerUrl ??
         'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4';
@@ -36,13 +44,14 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
   @override
   void dispose() {
     _controller?.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _showRateSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -65,8 +74,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                       const Spacer(),
                       Text(
                         _userRating.toStringAsFixed(1),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -133,9 +142,10 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     final item = widget.item;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
+          controller: _scrollController,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,7 +154,10 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.maybePop(context),
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -156,14 +169,18 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                 ],
               ),
               const SizedBox(height: 14),
-              Hero(
-                tag: widget.heroTag ?? 'poster-${item.imageUrl}-${item.title}',
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: _TrailerPlayer(
-                    controller: _controller,
-                    ready: _isReady,
-                    imageUrl: item.imageUrl,
+              Transform.translate(
+                offset: Offset(0, -_scrollOffset * 0.12),
+                child: Hero(
+                  tag:
+                      widget.heroTag ?? 'poster-${item.imageUrl}-${item.title}',
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: _TrailerPlayer(
+                      controller: _controller,
+                      ready: _isReady,
+                      imageUrl: item.imageUrl,
+                    ),
                   ),
                 ),
               ),
@@ -353,12 +370,12 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                       borderRadius: BorderRadius.circular(14),
                       child: Container(
                         width: 120,
-                        color: AppColors.surface,
+                        color: Theme.of(context).cardColor,
                         child: Image.network(
                           item.imageUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
-                              Container(color: AppColors.surface),
+                              Container(color: Theme.of(context).cardColor),
                         ),
                       ),
                     );
@@ -458,8 +475,9 @@ class _MetaRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF2F323B),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white10),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -481,14 +499,16 @@ class _Meta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = Theme.of(context).iconTheme.color ?? Colors.white;
+    final textColor = Theme.of(context).colorScheme.onSurface;
     return Row(
       children: [
-        Icon(icon, color: Colors.white),
+        Icon(icon, color: iconColor),
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: textColor,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -512,23 +532,27 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final textColor = background != null ? Colors.white : onSurface;
+    final iconColor = background != null ? Colors.white : onSurface;
+    return TapScale(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: background ?? const Color(0xFF2F323B),
+          color: background ?? Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white10),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white),
+            Icon(icon, color: iconColor),
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: textColor,
                 fontWeight: FontWeight.w700,
               ),
             ),

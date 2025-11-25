@@ -32,7 +32,7 @@ class SavedView extends StatelessWidget {
   Widget build(BuildContext context) {
     final savedItems = SavedRepository.saved;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
@@ -43,7 +43,10 @@ class SavedView extends StatelessWidget {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.maybePop(context),
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
                   ),
                   const SizedBox(width: 6),
                   Text(

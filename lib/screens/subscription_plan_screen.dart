@@ -19,7 +19,7 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           const BackgroundCollage(
@@ -30,7 +30,10 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 20),
-                const FlickyMark(size: 120),
+                const Hero(
+                  tag: 'flicky-logo',
+                  child: FlickyMark(size: 120),
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'Flicky',

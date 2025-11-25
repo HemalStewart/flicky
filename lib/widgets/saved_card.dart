@@ -16,8 +16,16 @@ class SavedCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white10),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 12,
+              offset: Offset(0, 6),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -31,7 +39,7 @@ class SavedCard extends StatelessWidget {
                 errorBuilder: (context, error, stackTrace) => Container(
                   width: 100,
                   height: 150,
-                  color: AppColors.surface,
+                  color: Theme.of(context).cardColor,
                 ),
               ),
             ),

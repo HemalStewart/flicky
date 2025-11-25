@@ -59,8 +59,31 @@ class _FlickyAppState extends State<FlickyApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Flicky',
-      theme: buildAppTheme(),
-      home: home,
+      theme: buildDarkTheme(),
+      themeMode: ThemeMode.dark,
+      home: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 500),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        transitionBuilder: (child, anim) {
+          final slide = Tween<Offset>(
+            begin: const Offset(0, 0.04),
+            end: Offset.zero,
+          ).animate(anim);
+          final scale = Tween<double>(begin: 0.98, end: 1.0).animate(anim);
+          return FadeTransition(
+            opacity: anim,
+            child: SlideTransition(
+              position: slide,
+              child: ScaleTransition(scale: scale, child: child),
+            ),
+          );
+        },
+        child: KeyedSubtree(
+          key: ValueKey(_stage),
+          child: home,
+        ),
+      ),
     );
   }
 }

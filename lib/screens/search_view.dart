@@ -57,7 +57,7 @@ class _SearchViewState extends State<SearchView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
@@ -68,7 +68,10 @@ class _SearchViewState extends State<SearchView> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.maybePop(context),
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -86,26 +89,31 @@ class _SearchViewState extends State<SearchView> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: AppColors.outline),
+                  border: Border.all(
+                    color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.search, color: Colors.white),
+                    Icon(Icons.search,
+                        color: Theme.of(context).iconTheme.color),
                     const SizedBox(width: 10),
                     Expanded(
                       child: TextField(
                         onChanged: (v) => setState(() => _query = v),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Search movies or series',
                           border: InputBorder.none,
-                          hintStyle: TextStyle(color: AppColors.muted),
+                          hintStyle: TextStyle(
+                            color: AppColors.muted.withValues(alpha: 0.8),
+                          ),
                         ),
-                        style: const TextStyle(color: Colors.white),
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ),
-                    const Icon(Icons.tune, color: Colors.white),
+                    Icon(Icons.tune, color: Theme.of(context).iconTheme.color),
                   ],
                 ),
               ),

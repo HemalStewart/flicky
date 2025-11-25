@@ -27,7 +27,14 @@ class GridPoster extends StatelessWidget {
           border: highlight
               ? Border.all(color: AppColors.accent, width: 1)
               : Border.all(color: Colors.transparent, width: 0),
-          color: AppColors.surface,
+          color: Theme.of(context).cardColor,
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 12,
+              offset: Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,7 +52,7 @@ class GridPoster extends StatelessWidget {
                         fit: BoxFit.cover,
                         alignment: Alignment.center,
                         errorBuilder: (context, error, stackTrace) =>
-                            Container(color: AppColors.surface),
+                            Container(color: Theme.of(context).cardColor),
                       ),
                     ),
                   ),

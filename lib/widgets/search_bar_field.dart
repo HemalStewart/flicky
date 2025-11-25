@@ -10,17 +10,20 @@ class SearchBarField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = Theme.of(context).iconTheme.color ?? Colors.white;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.outline),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         children: [
           const SizedBox(width: 4),
-          const Icon(Icons.search, color: Colors.white),
+          Icon(Icons.search, color: iconColor),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -35,11 +38,14 @@ class SearchBarField extends StatelessWidget {
             onTap: onTapFilter,
             child: Container(
               padding: const EdgeInsets.all(10),
-              decoration: const BoxDecoration(
-                color: Color.fromRGBO(255, 255, 255, 0.08),
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.tune, color: Colors.white),
+              child: Icon(Icons.tune, color: iconColor),
             ),
           ),
         ],

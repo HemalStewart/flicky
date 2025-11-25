@@ -2,6 +2,10 @@ PODS:
   - Flutter (1.0.0)
   - objective_c (0.0.1):
     - Flutter
+  - screen_protector (1.4.6):
+    - Flutter
+    - ScreenProtectorKit (= 1.4.2)
+  - ScreenProtectorKit (1.4.2)
   - video_player_avfoundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -9,19 +13,28 @@ PODS:
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - objective_c (from `.symlinks/plugins/objective_c/ios`)
+  - screen_protector (from `.symlinks/plugins/screen_protector/ios`)
   - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/darwin`)
+
+SPEC REPOS:
+  trunk:
+    - ScreenProtectorKit
 
 EXTERNAL SOURCES:
   Flutter:
     :path: Flutter
   objective_c:
     :path: ".symlinks/plugins/objective_c/ios"
+  screen_protector:
+    :path: ".symlinks/plugins/screen_protector/ios"
   video_player_avfoundation:
     :path: ".symlinks/plugins/video_player_avfoundation/darwin"
 
 SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   objective_c: 89e720c30d716b036faf9c9684022048eee1eee2
+  screen_protector: dc5f885bc1a59fba80ae486c7b5a1a5d95c506f7
+  ScreenProtectorKit: 9a05e5d137175e6d6e4fa81c2994e7614689efe6
   video_player_avfoundation: dd410b52df6d2466a42d28550e33e4146928280a
 
 PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e

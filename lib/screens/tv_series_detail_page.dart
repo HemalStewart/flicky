@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../data/saved_repository.dart';
 import '../data/tv_data.dart';
 import '../models/media_item.dart';
+import '../routes/fade_slide_route.dart';
 import '../theme/app_colors.dart';
+import '../widgets/tap_scale.dart';
 import 'tv_season_page.dart';
 
 class TvSeriesDetailPage extends StatefulWidget {
@@ -18,11 +20,13 @@ class TvSeriesDetailPage extends StatefulWidget {
 
 class _TvSeriesDetailPageState extends State<TvSeriesDetailPage> {
   double _userRating = 4.0;
+  final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0;
 
   void _showRateSheet() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -109,13 +113,30 @@ class _TvSeriesDetailPageState extends State<TvSeriesDetailPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      setState(() {
+        _scrollOffset = _scrollController.offset.clamp(0, 140);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final item = widget.item;
     final seasonList = seasonsFor(item);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
+          controller: _scrollController,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,7 +145,10 @@ class _TvSeriesDetailPageState extends State<TvSeriesDetailPage> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.maybePop(context),
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -136,10 +160,13 @@ class _TvSeriesDetailPageState extends State<TvSeriesDetailPage> {
                 ],
               ),
               const SizedBox(height: 14),
-              Hero(
-                tag:
-                    widget.heroTag ?? 'trending-${item.imageUrl}-${item.title}',
-                child: _HeroPlayer(imageUrl: item.imageUrl),
+              Transform.translate(
+                offset: Offset(0, -_scrollOffset * 0.12),
+                child: Hero(
+                  tag: widget.heroTag ??
+                      'trending-${item.imageUrl}-${item.title}',
+                  child: _HeroPlayer(imageUrl: item.imageUrl),
+                ),
               ),
               const SizedBox(height: 14),
               Center(
@@ -188,12 +215,11 @@ class _TvSeriesDetailPageState extends State<TvSeriesDetailPage> {
                   separatorBuilder: (_, i) => const SizedBox(width: 10),
                   itemBuilder: (context, index) {
                     final season = seasonList[index];
-                    return GestureDetector(
+                    return TapScale(
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              TvSeasonPage(series: item, season: season),
+                        FadeSlideRoute(
+                          page: TvSeasonPage(series: item, season: season),
                         ),
                       ),
                       child: Column(
@@ -336,18 +362,36 @@ class _MetaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = Theme.of(context).iconTheme.color ?? Colors.white;
+    final textColor = Theme.of(context).colorScheme.onSurface;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF2F323B),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white10),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const _Meta(icon: Icons.calendar_today, label: '18 Sep 1987'),
-          _Meta(icon: Icons.access_time, label: item.duration),
-          _Meta(icon: Icons.grid_view, label: item.category),
+          _Meta(
+            icon: Icons.calendar_today,
+            label: '18 Sep 1987',
+            iconColor: iconColor,
+            textColor: textColor,
+          ),
+          _Meta(
+            icon: Icons.access_time,
+            label: item.duration,
+            iconColor: iconColor,
+            textColor: textColor,
+          ),
+          _Meta(
+            icon: Icons.grid_view,
+            label: item.category,
+            iconColor: iconColor,
+            textColor: textColor,
+          ),
         ],
       ),
     );
@@ -355,21 +399,28 @@ class _MetaRow extends StatelessWidget {
 }
 
 class _Meta extends StatelessWidget {
-  const _Meta({required this.icon, required this.label});
+  const _Meta({
+    required this.icon,
+    required this.label,
+    required this.iconColor,
+    required this.textColor,
+  });
 
   final IconData icon;
   final String label;
+  final Color iconColor;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: Colors.white),
+        Icon(icon, color: iconColor),
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: textColor,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -390,6 +441,7 @@ class _ActionRow extends StatelessWidget {
       valueListenable: SavedRepository.saved,
       builder: (context, savedList, _) {
         final saved = SavedRepository.isSaved(item);
+        final onSurface = Theme.of(context).colorScheme.onSurface;
         return Row(
           children: [
             Expanded(
@@ -405,6 +457,7 @@ class _ActionRow extends StatelessWidget {
               child: _ActionButton(
                 icon: saved ? Icons.bookmark : Icons.bookmark_border,
                 label: saved ? 'Saved' : 'Save',
+                foreground: onSurface,
                 onTap: () {
                   SavedRepository.toggle(item);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -425,6 +478,7 @@ class _ActionRow extends StatelessWidget {
               child: _ActionButton(
                 icon: Icons.star_border,
                 label: 'Rate',
+                foreground: onSurface,
                 onTap: onRate,
               ),
             ),
@@ -441,32 +495,39 @@ class _ActionButton extends StatelessWidget {
     required this.label,
     this.background,
     this.onTap,
+    this.foreground,
   });
 
   final IconData icon;
   final String label;
   final Color? background;
   final VoidCallback? onTap;
+  final Color? foreground;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final textColor = background != null
+        ? Colors.white
+        : foreground ?? Theme.of(context).colorScheme.onSurface;
+    final iconColor = background != null ? Colors.white : textColor;
+    return TapScale(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: background ?? const Color(0xFF2F323B),
+          color: background ?? Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white10),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white),
+            Icon(icon, color: iconColor),
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: textColor,
                 fontWeight: FontWeight.w700,
               ),
             ),

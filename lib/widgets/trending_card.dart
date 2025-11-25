@@ -19,7 +19,14 @@ class TrendingCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color.fromRGBO(255, 255, 255, 0.15)),
-          color: AppColors.surface,
+          color: Theme.of(context).cardColor.withValues(alpha: 0.35),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 16,
+              offset: Offset(0, 10),
+            ),
+          ],
         ),
         child: Stack(
           children: [
@@ -35,10 +42,11 @@ class TrendingCard extends StatelessWidget {
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, progress) {
                         if (progress == null) return child;
-                        return Container(color: AppColors.surface);
+                        return Container(color: Theme.of(context).cardColor);
                       },
-                      errorBuilder: (context, error, stackTrace) =>
-                          Container(color: AppColors.surface),
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Theme.of(context).cardColor,
+                      ),
                     ),
                   ),
                 ),

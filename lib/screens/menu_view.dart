@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
+import '../widgets/staggered_fade_slide.dart';
+import '../widgets/tap_scale.dart';
 
 class MenuView extends StatelessWidget {
   const MenuView({super.key});
@@ -18,7 +19,7 @@ class MenuView extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
@@ -29,7 +30,10 @@ class MenuView extends StatelessWidget {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.maybePop(context),
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -47,7 +51,10 @@ class MenuView extends StatelessWidget {
                   separatorBuilder: (_, i) => const SizedBox(height: 14),
                   itemBuilder: (context, index) {
                     final item = items[index];
-                    return _MenuTile(item: item);
+                    return StaggeredFadeSlide(
+                      delay: Duration(milliseconds: 80 * index),
+                      child: _MenuTile(item: item),
+                    );
                   },
                 ),
               ),
@@ -72,26 +79,29 @@ class _MenuTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Icon(item.icon, color: Colors.white),
-          const SizedBox(width: 14),
-          Text(
-            item.title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
+    return TapScale(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Row(
+          children: [
+            Icon(item.icon, color: Colors.white),
+            const SizedBox(width: 14),
+            Text(
+              item.title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-          const Spacer(),
-          const Icon(Icons.chevron_right, color: Colors.white54),
-        ],
+            const Spacer(),
+            const Icon(Icons.chevron_right, color: Colors.white54),
+          ],
+        ),
       ),
     );
   }

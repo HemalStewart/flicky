@@ -34,7 +34,7 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     final fade = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           const BackgroundCollage(
@@ -70,7 +70,10 @@ class _SplashScreenState extends State<SplashScreen>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const FlickyMark(size: 160),
+                    const Hero(
+                      tag: 'flicky-logo',
+                      child: FlickyMark(size: 160),
+                    ),
                     const SizedBox(height: 24),
                     Text(
                       'Flicky',

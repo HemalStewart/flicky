@@ -42,7 +42,7 @@ class _SubscribeScreenState extends State<SubscribeScreen>
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           const BackgroundCollage(
@@ -61,7 +61,10 @@ class _SubscribeScreenState extends State<SubscribeScreen>
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const SizedBox(height: 8),
-                      const FlickyMark(size: 120),
+                      const Hero(
+                        tag: 'flicky-logo',
+                        child: FlickyMark(size: 120),
+                      ),
                       const SizedBox(height: 26),
                       Text(
                         'Flicky',
@@ -90,7 +93,7 @@ class _SubscribeScreenState extends State<SubscribeScreen>
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
+                          color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: Colors.white24),
                         ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../widgets/flicky_nav_bar.dart';
 import 'home_view.dart';
 import 'menu_view.dart';
@@ -27,7 +26,7 @@ class FlickyShell extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: IndexedStack(
         index: tabIndex,
         children: pages

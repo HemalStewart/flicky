@@ -8,6 +8,7 @@ import '../widgets/poster_card.dart';
 import '../widgets/section_header.dart';
 import '../widgets/trending_card.dart';
 import '../routes/fade_slide_route.dart';
+import '../widgets/staggered_fade_slide.dart';
 import 'movie_detail_page.dart';
 import 'tv_series_detail_page.dart';
 import 'profile_view.dart';
@@ -37,7 +38,7 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -47,93 +48,120 @@ class _HomeViewState extends State<HomeView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _HomeHeader(
-                      onTapSearch: () => Navigator.push(
-                        context,
-                        FadeSlideRoute(page: const SearchView()),
+                    StaggeredFadeSlide(
+                      delay: const Duration(milliseconds: 80),
+                      child: _HomeHeader(
+                        onTapSearch: () => Navigator.push(
+                          context,
+                          FadeSlideRoute(page: const SearchView()),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 22),
-                    const SectionHeader(
-                      title: 'Categories',
-                      actionIcon: Icons.arrow_forward,
+                    StaggeredFadeSlide(
+                      delay: const Duration(milliseconds: 140),
+                      child: const SectionHeader(
+                        title: 'Categories',
+                        actionIcon: Icons.arrow_forward,
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    CategoryChips(
-                      active: _activeCategory,
-                      onSelect: (c) => setState(() => _activeCategory = c),
+                    StaggeredFadeSlide(
+                      delay: const Duration(milliseconds: 200),
+                      child: CategoryChips(
+                        active: _activeCategory,
+                        onSelect: (c) => setState(() => _activeCategory = c),
+                      ),
                     ),
                     const SizedBox(height: 22),
-                    const SectionHeader(title: 'Trending Now'),
+                    StaggeredFadeSlide(
+                      delay: const Duration(milliseconds: 260),
+                      child: const SectionHeader(title: 'Trending Now'),
+                    ),
                     const SizedBox(height: 14),
-                    SizedBox(
-                      height: 360,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemBuilder: (context, index) {
-                          final item = trendingItems[index];
-                          return TrendingCard(
-                            item: item,
-                            onTap: () => _openDetail(
-                              context,
-                              item,
-                              'trending-${item.imageUrl}-${item.title}',
-                            ),
-                          );
-                        },
-                        separatorBuilder: (_, i) => const SizedBox(width: 14),
-                        itemCount: trendingItems.length,
+                    StaggeredFadeSlide(
+                      delay: const Duration(milliseconds: 320),
+                      child: SizedBox(
+                        height: 360,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemBuilder: (context, index) {
+                            final item = trendingItems[index];
+                            return TrendingCard(
+                              item: item,
+                              onTap: () => _openDetail(
+                                context,
+                                item,
+                                'trending-${item.imageUrl}-${item.title}',
+                              ),
+                            );
+                          },
+                          separatorBuilder: (_, i) => const SizedBox(width: 14),
+                          itemCount: trendingItems.length,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 22),
-                    const SectionHeader(
-                      title: 'Movies',
-                      actionIcon: Icons.arrow_forward,
+                    StaggeredFadeSlide(
+                      delay: const Duration(milliseconds: 380),
+                      child: const SectionHeader(
+                        title: 'Movies',
+                        actionIcon: Icons.arrow_forward,
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    SizedBox(
-                      height: 240,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemBuilder: (context, index) {
-                          final item = movieItems[index];
-                          return PosterCard(
-                            item: item,
-                            onTap: () => _openDetail(
-                              context,
-                              item,
-                              'poster-${item.imageUrl}-${item.title}',
-                            ),
-                          );
-                        },
-                        separatorBuilder: (_, i) => const SizedBox(width: 16),
-                        itemCount: movieItems.length,
+                    StaggeredFadeSlide(
+                      delay: const Duration(milliseconds: 440),
+                      child: SizedBox(
+                        height: 240,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemBuilder: (context, index) {
+                            final item = movieItems[index];
+                            return PosterCard(
+                              item: item,
+                              onTap: () => _openDetail(
+                                context,
+                                item,
+                                'poster-${item.imageUrl}-${item.title}',
+                              ),
+                            );
+                          },
+                          separatorBuilder: (_, i) => const SizedBox(width: 16),
+                          itemCount: movieItems.length,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 22),
-                    const SectionHeader(
-                      title: 'Tv series',
-                      actionIcon: Icons.arrow_forward,
+                    StaggeredFadeSlide(
+                      delay: const Duration(milliseconds: 500),
+                      child: const SectionHeader(
+                        title: 'Tv series',
+                        actionIcon: Icons.arrow_forward,
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    SizedBox(
-                      height: 220,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemBuilder: (context, index) {
-                          final item = seriesItems[index];
-                          return PosterCard(
-                            item: item,
-                            badge: item.category,
-                            onTap: () => _openDetail(
-                              context,
-                              item,
-                              'poster-${item.imageUrl}-${item.title}',
-                            ),
-                          );
-                        },
-                        separatorBuilder: (_, i) => const SizedBox(width: 16),
-                        itemCount: seriesItems.length,
+                    StaggeredFadeSlide(
+                      delay: const Duration(milliseconds: 560),
+                      child: SizedBox(
+                        height: 220,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemBuilder: (context, index) {
+                            final item = seriesItems[index];
+                            return PosterCard(
+                              item: item,
+                              badge: item.category,
+                              onTap: () => _openDetail(
+                                context,
+                                item,
+                                'poster-${item.imageUrl}-${item.title}',
+                              ),
+                            );
+                          },
+                          separatorBuilder: (_, i) => const SizedBox(width: 16),
+                          itemCount: seriesItems.length,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 30),
@@ -160,12 +188,12 @@ class _HomeHeader extends StatelessWidget {
         GestureDetector(
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const ProfileView()),
+            FadeSlideRoute(page: const ProfileView()),
           ),
           child: Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: Theme.of(context).cardColor,
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.outline),
             ),
@@ -199,7 +227,7 @@ class _HomeHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Theme.of(context).cardColor,
             shape: BoxShape.circle,
             border: Border.all(color: AppColors.outline),
           ),
@@ -212,7 +240,7 @@ class _HomeHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Theme.of(context).cardColor,
             shape: BoxShape.circle,
             border: Border.all(color: AppColors.outline),
           ),

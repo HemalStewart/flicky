@@ -20,7 +20,8 @@ class PosterCard extends StatelessWidget {
         width: 150,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(cornerRadius),
-          color: AppColors.surface,
+          color: Theme.of(context).cardColor,
+          border: Border.all(color: Colors.white10),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,7 +42,7 @@ class PosterCard extends StatelessWidget {
                               fit: BoxFit.cover,
                               alignment: Alignment.center,
                               errorBuilder: (context, error, stackTrace) =>
-                                  Container(color: AppColors.surface),
+                                  Container(color: Theme.of(context).cardColor),
                             ),
                           ),
                         ),

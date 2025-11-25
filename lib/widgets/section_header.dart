@@ -17,7 +17,8 @@ class SectionHeader extends StatelessWidget {
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         const Spacer(),
-        if (actionIcon != null) Icon(actionIcon, color: Colors.white),
+        if (actionIcon != null)
+          Icon(actionIcon, color: Theme.of(context).iconTheme.color),
       ],
     );
   }
