@@ -1,5 +1,8 @@
 import '../models/media_item.dart';
 
+const dummyVideoUrl =
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+
 const trendingItems = [
   MediaItem(
     title: 'Cruella',
@@ -13,10 +16,8 @@ const trendingItems = [
     cast: ['Emma Stone', 'Emma Thompson', 'Paul Walter Hauser'],
     director: 'Craig Gillespie',
     tags: ['Drama', 'Crime', 'Fashion'],
-    trailerUrl:
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    videoUrl:
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    trailerUrl: dummyVideoUrl,
+    videoUrl: dummyVideoUrl,
   ),
   MediaItem(
     title: 'Red Notice',
@@ -30,10 +31,8 @@ const trendingItems = [
     cast: ['Dwayne Johnson', 'Ryan Reynolds', 'Gal Gadot'],
     director: 'Rawson Marshall Thurber',
     tags: ['Action', 'Comedy', 'Heist'],
-    trailerUrl:
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    videoUrl:
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    trailerUrl: dummyVideoUrl,
+    videoUrl: dummyVideoUrl,
   ),
   MediaItem(
     title: 'Avatar',
@@ -47,10 +46,8 @@ const trendingItems = [
     cast: ['Sam Worthington', 'Zoe Saldana', 'Sigourney Weaver'],
     director: 'James Cameron',
     tags: ['Sci-Fi', 'Adventure'],
-    trailerUrl:
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    videoUrl:
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    trailerUrl: dummyVideoUrl,
+    videoUrl: dummyVideoUrl,
   ),
 ];
 
@@ -67,8 +64,8 @@ const movieItems = [
     cast: ['Joaquin Phoenix', 'Robert De Niro', 'Zazie Beetz'],
     director: 'Todd Phillips',
     tags: ['Crime', 'Drama', 'DC'],
-    videoUrl:
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    trailerUrl: dummyVideoUrl,
+    videoUrl: dummyVideoUrl,
   ),
   MediaItem(
     title: 'Interstellar',
@@ -82,8 +79,8 @@ const movieItems = [
     cast: ['Matthew McConaughey', 'Anne Hathaway', 'Jessica Chastain'],
     director: 'Christopher Nolan',
     tags: ['Sci-Fi', 'Drama', 'Space'],
-    videoUrl:
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    trailerUrl: dummyVideoUrl,
+    videoUrl: dummyVideoUrl,
   ),
   MediaItem(
     title: 'Oppenheimer',
@@ -97,8 +94,8 @@ const movieItems = [
     cast: ['Cillian Murphy', 'Emily Blunt', 'Robert Downey Jr.'],
     director: 'Christopher Nolan',
     tags: ['Drama', 'Biography', 'History'],
-    videoUrl:
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    trailerUrl: dummyVideoUrl,
+    videoUrl: dummyVideoUrl,
   ),
 ];
 
@@ -111,6 +108,8 @@ const seriesItems = [
     imageUrl: 'https://image.tmdb.org/t/p/w500/u3bZgnGQ9T01sWNhyveQz0wH0Hl.jpg',
     description:
         'Nine noble families fight for control over the lands of Westeros.',
+    trailerUrl: dummyVideoUrl,
+    videoUrl: dummyVideoUrl,
     isSeries: true,
   ),
   MediaItem(
@@ -121,6 +120,8 @@ const seriesItems = [
     imageUrl: 'https://image.tmdb.org/t/p/w500/x2LSRK2Cm7MZhjluni1msVJ3wDF.jpg',
     description:
         'A group of young friends witness supernatural forces and secret government exploits.',
+    trailerUrl: dummyVideoUrl,
+    videoUrl: dummyVideoUrl,
     isSeries: true,
   ),
   MediaItem(
@@ -131,6 +132,8 @@ const seriesItems = [
     imageUrl: 'https://image.tmdb.org/t/p/w500/od22ftNnyag0TTxcnJhlsu3aLoU.jpg',
     description:
         'A group of vigilantes set out to take down corrupt superheroes who abuse their superpowers.',
+    trailerUrl: dummyVideoUrl,
+    videoUrl: dummyVideoUrl,
     isSeries: true,
   ),
 ];

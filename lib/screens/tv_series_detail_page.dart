@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 
 import '../data/saved_repository.dart';
 import '../data/tv_data.dart';
@@ -20,9 +22,13 @@ class TvSeriesDetailPage extends StatefulWidget {
 }
 
 class _TvSeriesDetailPageState extends State<TvSeriesDetailPage> {
+  VideoPlayerController? _controller;
+  bool _ready = false;
   double _userRating = 4.0;
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0;
+  static const _fallbackTrailer =
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
 
   void _showRateSheet() {
     showModalBottomSheet(
@@ -121,10 +127,17 @@ class _TvSeriesDetailPageState extends State<TvSeriesDetailPage> {
         _scrollOffset = _scrollController.offset.clamp(0, 140);
       });
     });
+    final trailer = widget.item.trailerUrl ?? _fallbackTrailer;
+    _controller = VideoPlayerController.networkUrl(Uri.parse(trailer))
+      ..initialize().then((_) {
+        _controller?.setLooping(true);
+        if (mounted) setState(() => _ready = true);
+      });
   }
 
   @override
   void dispose() {
+    _controller?.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -166,7 +179,14 @@ class _TvSeriesDetailPageState extends State<TvSeriesDetailPage> {
                 child: Hero(
                   tag: widget.heroTag ??
                       'trending-${item.imageUrl}-${item.title}',
-                  child: _HeroPlayer(imageUrl: item.imageUrl),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: _TrailerPlayer(
+                      controller: _controller,
+                      ready: _ready,
+                      imageUrl: item.imageUrl,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 14),
@@ -311,47 +331,355 @@ class _TvSeriesDetailPageState extends State<TvSeriesDetailPage> {
   }
 }
 
-class _HeroPlayer extends StatelessWidget {
-  const _HeroPlayer({required this.imageUrl});
+class _TrailerPlayer extends StatefulWidget {
+  const _TrailerPlayer({
+    required this.controller,
+    required this.ready,
+    required this.imageUrl,
+  });
 
+  final VideoPlayerController? controller;
+  final bool ready;
   final String imageUrl;
 
   @override
+  State<_TrailerPlayer> createState() => _TrailerPlayerState();
+}
+
+class _TrailerPlayerState extends State<_TrailerPlayer> {
+  bool _visible = true;
+  Timer? _hideTimer;
+  bool _played = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller?.addListener(_onTick);
+  }
+
+  @override
+  void didUpdateWidget(covariant _TrailerPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?.removeListener(_onTick);
+      widget.controller?.addListener(_onTick);
+    }
+  }
+
+  void _onTick() {
+    if (!mounted) return;
+    final playing = widget.controller?.value.isPlaying ?? false;
+    if (playing) _scheduleHide();
+  }
+
+  void _scheduleHide() {
+    _hideTimer?.cancel();
+    if (widget.controller?.value.isPlaying != true) return;
+    _hideTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _visible = false);
+    });
+  }
+
+  void _toggle() {
+    setState(() => _visible = !_visible);
+    if (_visible) _scheduleHide();
+  }
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    widget.controller?.removeListener(_onTick);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
+    final showVideo = _played &&
+        widget.ready &&
+        controller != null &&
+        controller.value.isInitialized;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
-            color: Colors.black45,
+            color: Colors.black38,
             blurRadius: 18,
             offset: Offset(0, 8),
           ),
         ],
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Image.network(
-              imageUrl,
-              height: 200,
-              width: double.infinity,
-              fit: BoxFit.cover,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: GestureDetector(
+            onTap: () {
+              if (!_played && controller != null && controller.value.isInitialized) {
+                setState(() => _played = true);
+                controller.play();
+                _scheduleHide();
+              } else {
+                _toggle();
+              }
+            },
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned.fill(
+                  child: showVideo
+                      ? VideoPlayer(controller)
+                      : Image.network(widget.imageUrl, fit: BoxFit.cover),
+                ),
+                Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.transparent, Colors.black54],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
+                ),
+                if (!showVideo)
+                  Container(
+                    height: 74,
+                    width: 74,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black.withValues(alpha: 0.55),
+                    ),
+                    child: IconButton(
+                      onPressed: () {
+                        if (controller == null) return;
+                        if (!_played) setState(() => _played = true);
+                        controller.play();
+                        _scheduleHide();
+                      },
+                      icon: const Icon(
+                        Icons.play_arrow,
+                        color: Colors.white,
+                        size: 44,
+                      ),
+                    ),
+                  ),
+                if (controller != null && showVideo)
+                  Positioned(
+                    child: ValueListenableBuilder<VideoPlayerValue>(
+                      valueListenable: controller,
+                      builder: (context, value, _) {
+                        final duration = value.duration;
+                        final position = value.position;
+                        final hasDuration =
+                            value.isInitialized && duration.inMilliseconds > 0;
+                        return AnimatedOpacity(
+                          duration: const Duration(milliseconds: 200),
+                          opacity: _visible ? 1 : 0,
+                          child: IgnorePointer(
+                            ignoring: !_visible,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  onPressed: hasDuration
+                                      ? () {
+                                          final target = position -
+                                              const Duration(seconds: 10);
+                                          controller.seekTo(
+                                            target < Duration.zero
+                                                ? Duration.zero
+                                                : target,
+                                          );
+                                          _scheduleHide();
+                                        }
+                                      : null,
+                                  icon: const Icon(
+                                    Icons.replay_10,
+                                    color: Colors.white,
+                                    size: 30,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                IconButton(
+                                  onPressed: () {
+                                    if (!_played) {
+                                      setState(() => _played = true);
+                                      controller.play();
+                                    } else {
+                                      value.isPlaying
+                                          ? controller.pause()
+                                          : controller.play();
+                                    }
+                                    _scheduleHide();
+                                  },
+                                  icon: Icon(
+                                    value.isPlaying
+                                        ? Icons.pause_circle_filled
+                                        : Icons.play_circle_fill,
+                                    color: Colors.white,
+                                    size: 68,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                IconButton(
+                                  onPressed: hasDuration
+                                      ? () {
+                                          final target = position +
+                                              const Duration(seconds: 10);
+                                          controller.seekTo(
+                                            target > duration ? duration : target,
+                                          );
+                                          _scheduleHide();
+                                        }
+                                      : null,
+                                  icon: const Icon(
+                                    Icons.forward_10,
+                                    color: Colors.white,
+                                    size: 30,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                if (showVideo)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: _InlineControlsOverlay(
+                      controller: controller,
+                      visible: _visible,
+                      onInteract: _scheduleHide,
+                    ),
+                  ),
+              ],
             ),
           ),
-          Container(
-            height: 70,
-            width: 70,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.black54,
-            ),
-            child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
-          ),
-        ],
+        ),
       ),
+    );
+  }
+}
+
+class _InlineControlsOverlay extends StatelessWidget {
+  const _InlineControlsOverlay({
+    required this.controller,
+    required this.visible,
+    required this.onInteract,
+  });
+
+  final VideoPlayerController controller;
+  final bool visible;
+  final VoidCallback onInteract;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<VideoPlayerValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        final duration = value.duration;
+        final position = value.position;
+        final hasDuration = duration.inMilliseconds > 0;
+        final progress = hasDuration
+            ? position.inMilliseconds / duration.inMilliseconds
+            : 0.0;
+
+        String fmt(Duration d) {
+          if (d.inMilliseconds <= 0) return '00:00';
+          final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+          final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+          final h = d.inHours;
+          return h > 0 ? '$h:$m:$s' : '$m:$s';
+        }
+
+        return AnimatedOpacity(
+          duration: const Duration(milliseconds: 200),
+          opacity: visible ? 1 : 0,
+          child: IgnorePointer(
+            ignoring: !visible,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(12, 36, 12, 14),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.black54, Colors.transparent],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          onInteract();
+                          value.isPlaying
+                              ? controller.pause()
+                              : controller.play();
+                        },
+                        icon: Icon(
+                          value.isPlaying ? Icons.pause : Icons.play_arrow,
+                          color: Colors.white,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () async {
+                          onInteract();
+                          final muted = value.volume == 0;
+                          await controller.setVolume(muted ? 1.0 : 0.0);
+                        },
+                        icon: Icon(
+                          value.volume == 0
+                              ? Icons.volume_off
+                              : Icons.volume_up,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            trackHeight: 3,
+                            thumbShape: const RoundSliderThumbShape(
+                                enabledThumbRadius: 7),
+                          ),
+                          child: Slider(
+                            value: progress.clamp(0, 1),
+                            activeColor: AppColors.accent,
+                            inactiveColor: Colors.white24,
+                            onChanged: hasDuration
+                                ? (v) {
+                                    onInteract();
+                                    final target = Duration(
+                                      milliseconds:
+                                          (duration.inMilliseconds * v).toInt(),
+                                    );
+                                    controller.seekTo(target);
+                                  }
+                                : null,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        '${fmt(position)} / ${fmt(duration)}',
+                        style:
+                            const TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

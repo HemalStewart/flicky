@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
 import '../theme/app_colors.dart';
@@ -22,16 +24,20 @@ class PlayerScreen extends StatefulWidget {
 class _PlayerScreenState extends State<PlayerScreen> {
   VideoPlayerController? _controller;
   bool _ready = false;
+  bool _controlsVisible = true;
+  Timer? _hideTimer;
 
   @override
   void initState() {
     super.initState();
+    _setLandscapeMode();
     _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
       ..initialize().then((_) {
         if (!mounted) return;
         _controller?.setLooping(false);
         _controller?.play();
         setState(() => _ready = true);
+        _scheduleHide();
       }).catchError((error) {
         debugPrint('Video init error: $error');
         if (!mounted) return;
@@ -41,8 +47,37 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    _restorePortraitMode();
+    _hideTimer?.cancel();
     _controller?.dispose();
     super.dispose();
+  }
+
+  Future<void> _setLandscapeMode() async {
+    await SystemChrome.setPreferredOrientations(
+      [
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ],
+    );
+  }
+
+  Future<void> _restorePortraitMode() async {
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  }
+
+  void _toggleControls() {
+    setState(() => _controlsVisible = !_controlsVisible);
+    if (_controlsVisible) _scheduleHide();
+  }
+
+  void _scheduleHide() {
+    _hideTimer?.cancel();
+    if (_controller?.value.isPlaying != true) return;
+    _hideTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _controlsVisible = false);
+    });
   }
 
   @override
@@ -50,104 +85,113 @@ class _PlayerScreenState extends State<PlayerScreen> {
     final controller = _controller;
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: controller != null && controller.value.isInitialized
-                ? _RotatedFullscreenVideo(controller: controller)
-                : widget.poster != null
-                    ? Transform.rotate(
-                        angle: 1.5708,
-                        child: Image.network(
+      body: GestureDetector(
+        onTap: _toggleControls,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: controller != null && controller.value.isInitialized
+                  ? _FullscreenVideo(controller: controller)
+                  : widget.poster != null
+                      ? Image.network(
                           widget.poster!,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stack) =>
                               Container(color: Colors.black),
-                        ),
-                      )
-                    : Container(color: Colors.black),
-          ),
-          if (!_ready)
-            const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation(Colors.white),
-              ),
+                        )
+                      : Container(color: Colors.black),
             ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.maybePop(context),
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        widget.title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+            if (!_ready)
+              const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation(Colors.white),
                 ),
               ),
-            ),
-          ),
-          if (controller != null && controller.value.isInitialized)
             Positioned(
+              top: 0,
               left: 0,
               right: 0,
-              bottom: 0,
               child: SafeArea(
-                minimum: const EdgeInsets.only(bottom: 8),
                 child: Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  child: _Controls(controller: controller),
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.maybePop(context),
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          widget.title,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RotatedFullscreenVideo extends StatelessWidget {
-  const _RotatedFullscreenVideo({required this.controller});
-  final VideoPlayerController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final size = controller.value.size;
-    return Center(
-      child: RotatedBox(
-        quarterTurns: 1,
-        child: FittedBox(
-          fit: BoxFit.cover,
-          child: SizedBox(
-            width: size.height,
-            height: size.width,
-            child: VideoPlayer(controller),
-          ),
+            if (controller != null && controller.value.isInitialized)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: SafeArea(
+                  minimum: const EdgeInsets.only(bottom: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    child: _Controls(
+                      controller: controller,
+                      visible: _controlsVisible,
+                      onInteract: _scheduleHide,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _Controls extends StatefulWidget {
-  const _Controls({required this.controller});
+class _FullscreenVideo extends StatelessWidget {
+  const _FullscreenVideo({required this.controller});
   final VideoPlayerController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final aspect = controller.value.isInitialized && controller.value.size.width > 0
+        ? controller.value.aspectRatio
+        : 16 / 9;
+    return Center(
+      child: AspectRatio(
+        aspectRatio: aspect,
+        child: VideoPlayer(controller),
+      ),
+    );
+  }
+}
+
+class _Controls extends StatefulWidget {
+  const _Controls({
+    required this.controller,
+    required this.visible,
+    required this.onInteract,
+  });
+  final VideoPlayerController controller;
+  final bool visible;
+  final VoidCallback onInteract;
 
   @override
   State<_Controls> createState() => _ControlsState();
@@ -202,86 +246,113 @@ class _ControlsState extends State<_Controls> {
       return '$minutes:$seconds';
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () {
-              playing ? widget.controller.pause() : widget.controller.play();
-            },
-            icon: Icon(
-              playing ? Icons.pause : Icons.play_arrow,
-              color: Colors.white,
-              size: 26,
-            ),
+    return AnimatedOpacity(
+      opacity: widget.visible ? 1 : 0,
+      duration: const Duration(milliseconds: 250),
+      child: IgnorePointer(
+        ignoring: !widget.visible,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.black54,
+            borderRadius: BorderRadius.circular(18),
           ),
-          IconButton(
-            onPressed: hasDuration
-                ? () {
-                    final target = position - const Duration(seconds: 10);
-                    widget.controller.seekTo(
-                      target < Duration.zero ? Duration.zero : target,
-                    );
-                  }
-                : null,
-            icon: const Icon(Icons.replay_10, color: Colors.white, size: 22),
-          ),
-          IconButton(
-            onPressed: hasDuration
-                ? () {
-                    final target = position + const Duration(seconds: 10);
-                    final capped = target > duration ? duration : target;
-                    widget.controller.seekTo(capped);
-                  }
-                : null,
-            icon: const Icon(Icons.forward_10, color: Colors.white, size: 22),
-          ),
-          IconButton(
-            onPressed: () async {
-              final newVol = _muted ? 1.0 : 0.0;
-              await widget.controller.setVolume(newVol);
-              setState(() => _muted = !_muted);
-            },
-            icon: Icon(
-              _muted ? Icons.volume_off : Icons.volume_up,
-              color: Colors.white,
-              size: 22,
-            ),
-          ),
-          Expanded(
-            child: SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                trackHeight: 3,
-                thumbShape:
-                    const RoundSliderThumbShape(enabledThumbRadius: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 3,
+                        thumbShape:
+                            const RoundSliderThumbShape(enabledThumbRadius: 8),
+                      ),
+                      child: Slider(
+                        value: _position.clamp(0, 1),
+                        activeColor: AppColors.accent,
+                        inactiveColor: Colors.white24,
+                        onChanged: hasDuration
+                            ? (value) {
+                                widget.onInteract();
+                                final target = Duration(
+                                  milliseconds:
+                                      (duration.inMilliseconds * value).toInt(),
+                                );
+                                widget.controller.seekTo(target);
+                              }
+                            : null,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    '${format(position)} / ${format(duration)}',
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
               ),
-              child: Slider(
-                value: _position.clamp(0, 1),
-                activeColor: AppColors.accent,
-                inactiveColor: Colors.white24,
-                onChanged: hasDuration
-                    ? (value) {
-                        final target = Duration(
-                          milliseconds:
-                              (duration.inMilliseconds * value).toInt(),
-                        );
-                        widget.controller.seekTo(target);
-                      }
-                    : null,
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      widget.onInteract();
+                      playing
+                          ? widget.controller.pause()
+                          : widget.controller.play();
+                    },
+                    icon: Icon(
+                      playing ? Icons.pause : Icons.play_arrow,
+                      color: Colors.white,
+                      size: 26,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: hasDuration
+                        ? () {
+                            widget.onInteract();
+                            final target = position - const Duration(seconds: 10);
+                            widget.controller.seekTo(
+                              target < Duration.zero ? Duration.zero : target,
+                            );
+                          }
+                        : null,
+                    icon:
+                        const Icon(Icons.replay_10, color: Colors.white, size: 22),
+                  ),
+                  IconButton(
+                    onPressed: hasDuration
+                        ? () {
+                            widget.onInteract();
+                            final target = position + const Duration(seconds: 10);
+                            final capped = target > duration ? duration : target;
+                            widget.controller.seekTo(capped);
+                          }
+                        : null,
+                    icon: const Icon(Icons.forward_10,
+                        color: Colors.white, size: 22),
+                  ),
+                  IconButton(
+                    onPressed: () async {
+                      widget.onInteract();
+                      final newVol = _muted ? 1.0 : 0.0;
+                      await widget.controller.setVolume(newVol);
+                      setState(() => _muted = !_muted);
+                    },
+                    icon: Icon(
+                      _muted ? Icons.volume_off : Icons.volume_up,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ],
               ),
-            ),
+            ],
           ),
-          const SizedBox(width: 6),
-          Text(
-            '${format(position)} / ${format(duration)}',
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-        ],
+        ),
       ),
     );
   }

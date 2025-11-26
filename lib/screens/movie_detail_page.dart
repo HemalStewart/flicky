@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
@@ -24,6 +25,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
   double _userRating = 4.0;
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0;
+  static const _fallbackTrailer =
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
 
   @override
   void initState() {
@@ -33,13 +36,11 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
         _scrollOffset = _scrollController.offset.clamp(0, 140);
       });
     });
-    final trailer =
-        widget.item.trailerUrl ??
-        'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4';
+    final trailer = widget.item.trailerUrl ?? _fallbackTrailer;
     _controller = VideoPlayerController.networkUrl(Uri.parse(trailer))
       ..initialize().then((_) {
         _controller?.setLooping(true);
-        setState(() => _isReady = true);
+        if (mounted) setState(() => _isReady = true);
       });
   }
 
@@ -407,7 +408,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
   }
 }
 
-class _TrailerPlayer extends StatelessWidget {
+class _TrailerPlayer extends StatefulWidget {
   const _TrailerPlayer({
     required this.controller,
     required this.ready,
@@ -419,9 +420,62 @@ class _TrailerPlayer extends StatelessWidget {
   final String imageUrl;
 
   @override
+  State<_TrailerPlayer> createState() => _TrailerPlayerState();
+}
+
+class _TrailerPlayerState extends State<_TrailerPlayer> {
+  bool _visible = true;
+  Timer? _hideTimer;
+  bool _played = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller?.addListener(_onTick);
+  }
+
+  @override
+  void didUpdateWidget(covariant _TrailerPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?.removeListener(_onTick);
+      widget.controller?.addListener(_onTick);
+    }
+  }
+
+  void _onTick() {
+    if (!mounted) return;
+    final playing = widget.controller?.value.isPlaying ?? false;
+    if (playing) _scheduleHide();
+  }
+
+  void _scheduleHide() {
+    _hideTimer?.cancel();
+    if (widget.controller?.value.isPlaying != true) return;
+    _hideTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _visible = false);
+    });
+  }
+
+  void _toggle() {
+    setState(() => _visible = !_visible);
+    if (_visible) _scheduleHide();
+  }
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    widget.controller?.removeListener(_onTick);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final showVideo =
-        ready && controller != null && controller!.value.isInitialized;
+    final controller = widget.controller;
+    final showVideo = _played &&
+        widget.ready &&
+        controller != null &&
+        controller.value.isInitialized;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -437,53 +491,150 @@ class _TrailerPlayer extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: AspectRatio(
           aspectRatio: 16 / 9,
+          child: GestureDetector(
+            onTap: () {
+              if (!_played && controller != null && controller.value.isInitialized) {
+                setState(() => _played = true);
+                controller.play();
+                _scheduleHide();
+              } else {
+                _toggle();
+              }
+            },
             child: Stack(
               alignment: Alignment.center,
               children: [
                 Positioned.fill(
                   child: showVideo
-                    ? VideoPlayer(controller!)
-                    : Image.network(imageUrl, fit: BoxFit.cover),
-              ),
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.transparent, Colors.black54],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+                      ? VideoPlayer(controller)
+                      : Image.network(widget.imageUrl, fit: BoxFit.cover),
+                ),
+                Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.transparent, Colors.black54],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
                   ),
                 ),
-              ),
-              if (controller != null)
-                Positioned(
-                  child: ValueListenableBuilder<VideoPlayerValue>(
-                    valueListenable: controller!,
-                    builder: (context, value, _) {
-                      return IconButton(
-                        onPressed: () {
-                          value.isPlaying
-                              ? controller!.pause()
-                              : controller!.play();
-                        },
-                        icon: Icon(
-                          value.isPlaying
-                              ? Icons.pause_circle_filled
-                              : Icons.play_circle_fill,
-                          color: Colors.white,
-                          size: 52,
-                        ),
-                      );
-                    },
+                if (!showVideo)
+                  Container(
+                    height: 74,
+                    width: 74,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black.withValues(alpha: 0.55),
+                    ),
+                    child: IconButton(
+                      onPressed: () {
+                        if (controller == null) return;
+                        if (!_played) setState(() => _played = true);
+                        controller.play();
+                        _scheduleHide();
+                      },
+                      icon: const Icon(
+                        Icons.play_arrow,
+                        color: Colors.white,
+                        size: 44,
+                      ),
+                    ),
                   ),
-                ),
-              if (showVideo)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: _InlineControls(controller: controller!),
-                ),
-            ],
+                if (controller != null && showVideo)
+                  Positioned(
+                    child: ValueListenableBuilder<VideoPlayerValue>(
+                      valueListenable: controller,
+                      builder: (context, value, _) {
+                        final duration = value.duration;
+                        final position = value.position;
+                        final hasDuration =
+                            value.isInitialized && duration.inMilliseconds > 0;
+                        return AnimatedOpacity(
+                          duration: const Duration(milliseconds: 200),
+                          opacity: _visible ? 1 : 0,
+                          child: IgnorePointer(
+                            ignoring: !_visible,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  onPressed: hasDuration
+                                      ? () {
+                                          final target = position -
+                                              const Duration(seconds: 10);
+                                          controller.seekTo(
+                                            target < Duration.zero
+                                                ? Duration.zero
+                                                : target,
+                                          );
+                                          _scheduleHide();
+                                        }
+                                      : null,
+                                  icon: const Icon(
+                                    Icons.replay_10,
+                                    color: Colors.white,
+                                    size: 30,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                IconButton(
+                                  onPressed: () {
+                                    if (!_played) {
+                                      setState(() => _played = true);
+                                      controller.play();
+                                    } else {
+                                      value.isPlaying
+                                          ? controller.pause()
+                                          : controller.play();
+                                    }
+                                    _scheduleHide();
+                                  },
+                                  icon: Icon(
+                                    value.isPlaying
+                                        ? Icons.pause_circle_filled
+                                        : Icons.play_circle_fill,
+                                    color: Colors.white,
+                                    size: 68,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                IconButton(
+                                  onPressed: hasDuration
+                                      ? () {
+                                          final target = position +
+                                              const Duration(seconds: 10);
+                                          controller.seekTo(
+                                            target > duration ? duration : target,
+                                          );
+                                          _scheduleHide();
+                                        }
+                                      : null,
+                                  icon: const Icon(
+                                    Icons.forward_10,
+                                    color: Colors.white,
+                                    size: 30,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                if (showVideo)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: _InlineControlsOverlay(
+                      controller: controller,
+                      visible: _visible,
+                      onInteract: _scheduleHide,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -491,10 +642,16 @@ class _TrailerPlayer extends StatelessWidget {
   }
 }
 
-class _InlineControls extends StatelessWidget {
-  const _InlineControls({required this.controller});
+class _InlineControlsOverlay extends StatelessWidget {
+  const _InlineControlsOverlay({
+    required this.controller,
+    required this.visible,
+    required this.onInteract,
+  });
 
   final VideoPlayerController controller;
+  final bool visible;
+  final VoidCallback onInteract;
 
   @override
   Widget build(BuildContext context) {
@@ -516,91 +673,87 @@ class _InlineControls extends StatelessWidget {
           return h > 0 ? '$h:$m:$s' : '$m:$s';
         }
 
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.black54, Colors.transparent],
-              begin: Alignment.bottomCenter,
-              end: Alignment.topCenter,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
+        return AnimatedOpacity(
+          duration: const Duration(milliseconds: 200),
+          opacity: visible ? 1 : 0,
+          child: IgnorePointer(
+            ignoring: !visible,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(12, 36, 12, 14),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.black54, Colors.transparent],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    onPressed: () {
-                      value.isPlaying ? controller.pause() : controller.play();
-                    },
-                    icon: Icon(
-                      value.isPlaying
-                          ? Icons.pause_circle_filled
-                          : Icons.play_circle_fill,
-                      color: Colors.white,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: hasDuration
-                        ? () {
-                            final target =
-                                position - const Duration(seconds: 10);
-                            controller.seekTo(
-                              target < Duration.zero
-                                  ? Duration.zero
-                                  : target,
-                            );
-                          }
-                        : null,
-                    icon: const Icon(Icons.replay_10, color: Colors.white),
-                  ),
-                  IconButton(
-                    onPressed: hasDuration
-                        ? () {
-                            final target =
-                                position + const Duration(seconds: 10);
-                            controller.seekTo(
-                              target > duration ? duration : target,
-                            );
-                          }
-                        : null,
-                    icon: const Icon(Icons.forward_10, color: Colors.white),
-                  ),
-                  IconButton(
-                    onPressed: () async {
-                      final muted = value.volume == 0;
-                      await controller.setVolume(muted ? 1.0 : 0.0);
-                    },
-                    icon: Icon(
-                      value.volume == 0 ? Icons.volume_off : Icons.volume_up,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Expanded(
-                    child: Slider(
-                      value: progress.clamp(0, 1),
-                      activeColor: AppColors.accent,
-                      inactiveColor: Colors.white24,
-                      onChanged: hasDuration
-                          ? (v) {
-                              final target = Duration(
-                                milliseconds:
-                                    (duration.inMilliseconds * v).toInt(),
-                              );
-                              controller.seekTo(target);
-                            }
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${fmt(position)} / ${fmt(duration)}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          onInteract();
+                          value.isPlaying
+                              ? controller.pause()
+                              : controller.play();
+                        },
+                        icon: Icon(
+                          value.isPlaying ? Icons.pause : Icons.play_arrow,
+                          color: Colors.white,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () async {
+                          onInteract();
+                          final muted = value.volume == 0;
+                          await controller.setVolume(muted ? 1.0 : 0.0);
+                        },
+                        icon: Icon(
+                          value.volume == 0
+                              ? Icons.volume_off
+                              : Icons.volume_up,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            trackHeight: 3,
+                            thumbShape: const RoundSliderThumbShape(
+                                enabledThumbRadius: 7),
+                          ),
+                          child: Slider(
+                            value: progress.clamp(0, 1),
+                            activeColor: AppColors.accent,
+                            inactiveColor: Colors.white24,
+                            onChanged: hasDuration
+                                ? (v) {
+                                    onInteract();
+                                    final target = Duration(
+                                      milliseconds:
+                                          (duration.inMilliseconds * v).toInt(),
+                                    );
+                                    controller.seekTo(target);
+                                  }
+                                : null,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        '${fmt(position)} / ${fmt(duration)}',
+                        style:
+                            const TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         );
       },
