@@ -1,10 +1,54 @@
 import 'package:flutter/material.dart';
 
+import '../services/auth_service.dart';
 import '../widgets/staggered_fade_slide.dart';
 import '../widgets/tap_scale.dart';
+import '../routes/fade_slide_route.dart';
+import '../screens/subscribe_screen.dart';
+import '../screens/otp_screen.dart';
+import '../screens/main_shell.dart';
 
 class MenuView extends StatelessWidget {
   const MenuView({super.key});
+
+  Future<void> _handleTap(BuildContext context, String title) async {
+    if (title != 'UnSubscribe') return;
+
+    await AuthService.instance.unsubscribe();
+    if (!context.mounted) return;
+    final nav = Navigator.of(context);
+
+    void goMain() {
+      nav.pushAndRemoveUntil(
+        FadeSlideRoute(page: const FlickyShell()),
+        (route) => false,
+      );
+    }
+
+    void goPhone() {
+      nav.pushAndRemoveUntil(
+        FadeSlideRoute(
+          page: SubscribeScreen(
+            onLoginSuccess: goMain,
+            onOtpRequested: (mobile) {
+              nav.pushReplacement(
+                FadeSlideRoute(
+                  page: OtpScreen(
+                    mobile: mobile,
+                    onVerified: goMain,
+                    onEditNumber: goPhone,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        (route) => false,
+      );
+    }
+
+    goPhone();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +97,10 @@ class MenuView extends StatelessWidget {
                     final item = items[index];
                     return StaggeredFadeSlide(
                       delay: Duration(milliseconds: 80 * index),
-                      child: _MenuTile(item: item),
+                      child: _MenuTile(
+                        item: item,
+                        onTap: () => _handleTap(context, item.title),
+                      ),
                     );
                   },
                 ),
@@ -73,13 +120,15 @@ class _MenuItem {
 }
 
 class _MenuTile extends StatelessWidget {
-  const _MenuTile({required this.item});
+  const _MenuTile({required this.item, required this.onTap});
 
   final _MenuItem item;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return TapScale(
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(

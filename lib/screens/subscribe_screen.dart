@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 
+import '../services/auth_service.dart';
+import '../data/auth_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/background_collage.dart';
 import '../widgets/flicky_mark.dart';
 
 class SubscribeScreen extends StatefulWidget {
-  SubscribeScreen({super.key, required this.onContinue});
+  SubscribeScreen({
+    super.key,
+    required this.onOtpRequested,
+    required this.onLoginSuccess,
+  });
 
-  final VoidCallback onContinue;
+  final void Function(String mobile) onOtpRequested;
+  final VoidCallback onLoginSuccess;
   final TextEditingController _controller = TextEditingController();
 
   @override
@@ -17,6 +24,7 @@ class SubscribeScreen extends StatefulWidget {
 class _SubscribeScreenState extends State<SubscribeScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  bool _loading = false;
 
   @override
   void initState() {
@@ -30,7 +38,41 @@ class _SubscribeScreenState extends State<SubscribeScreen>
   @override
   void dispose() {
     _controller.dispose();
+    widget._controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleSendOtp() async {
+    final mobile = widget._controller.text;
+    setState(() => _loading = true);
+    try {
+      final result = await AuthService.instance.requestOtp(mobile);
+      if (!mounted) return;
+      if (result.userExists) {
+        widget.onLoginSuccess();
+      } else if (result.referenceNo != null) {
+        widget.onOtpRequested(result.mobile);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('OTP sent')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unexpected response, try again')),
+        );
+      }
+    } on AuthDomainException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to send OTP, try again')),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -119,15 +161,25 @@ class _SubscribeScreenState extends State<SubscribeScreen>
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          onPressed: widget.onContinue,
-                          child: const Text(
-                            'Subscribe',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 16,
-                              color: Colors.white,
-                            ),
-                          ),
+                          onPressed: _loading ? null : _handleSendOtp,
+                          child: _loading
+                              ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor:
+                                        AlwaysStoppedAnimation(Colors.white),
+                                  ),
+                                )
+                              : const Text(
+                                  'Send OTP',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 18),
