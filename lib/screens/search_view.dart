@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/sample_data.dart';
+import '../data/content_api.dart';
 import '../models/media_item.dart';
 import '../theme/app_colors.dart';
 import '../widgets/grid_poster.dart';
@@ -16,13 +16,15 @@ class SearchView extends StatefulWidget {
 }
 
 class _SearchViewState extends State<SearchView> {
-  late List<MediaItem> _items;
+  List<MediaItem> _items = const [];
   String _query = '';
+  bool _loading = false;
+  String? _error;
+  int _searchToken = 0;
 
   @override
   void initState() {
     super.initState();
-    _items = [...trendingItems, ...movieItems, ...seriesItems];
   }
 
   void _openDetail(BuildContext context, MediaItem item) {
@@ -102,7 +104,7 @@ class _SearchViewState extends State<SearchView> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: TextField(
-                        onChanged: (v) => setState(() => _query = v),
+                        onChanged: _handleSearch,
                         decoration: InputDecoration(
                           hintText: 'Search movies or series',
                           border: InputBorder.none,
@@ -118,6 +120,15 @@ class _SearchViewState extends State<SearchView> {
                 ),
               ),
               const SizedBox(height: 14),
+              if (_loading)
+                const LinearProgressIndicator(minHeight: 2),
+              if (_error != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  _error!,
+                  style: TextStyle(color: AppColors.muted, fontSize: 12),
+                ),
+              ],
               Expanded(
                 child: GridView.builder(
                   padding: const EdgeInsets.only(bottom: 12),
@@ -143,5 +154,40 @@ class _SearchViewState extends State<SearchView> {
         ),
       ),
     );
+  }
+
+  void _handleSearch(String value) {
+    setState(() {
+      _query = value;
+      _error = null;
+    });
+
+    if (value.trim().isEmpty) {
+      setState(() {
+        _items = const [];
+        _loading = false;
+      });
+      return;
+    }
+
+    final token = ++_searchToken;
+    setState(() => _loading = true);
+    ContentApi()
+        .search(value.trim())
+        .then((results) {
+      if (!mounted || token != _searchToken) return;
+      setState(() {
+        _items = results;
+      });
+    }).catchError((_) {
+      if (!mounted || token != _searchToken) return;
+      setState(() {
+        _items = const [];
+        _error = 'Search failed. Try again.';
+      });
+    }).whenComplete(() {
+      if (!mounted || token != _searchToken) return;
+      setState(() => _loading = false);
+    });
   }
 }

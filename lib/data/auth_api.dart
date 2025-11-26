@@ -58,10 +58,12 @@ class AuthApi {
 
   Future<AuthApiResult> requestOtp(String mobile,
       {String? sessionCookie}) async {
-    final response = await _postWithFallback(
-      path: '/auth/request-otp',
+    final response = await _postLegacy(
+      body: {
+        'funName': 'requestOTPNew',
+        'mobile': mobile.trim(),
+      },
       sessionCookie: sessionCookie,
-      body: {'mobile': mobile.trim()},
     );
 
     final payload = _decodeRelaxed(response);
@@ -79,14 +81,14 @@ class AuthApi {
     required String otp,
     String? sessionCookie,
   }) async {
-    final response = await _postWithFallback(
-      path: '/auth/verify-otp',
-      sessionCookie: sessionCookie,
+    final response = await _postLegacy(
       body: {
-        'reference_no': referenceNo,
-        'otp': otp.trim(),
+        'funName': 'verifyOtpNew',
+        'referenceNo': referenceNo,
+        'otp_code': otp.trim(),
         'mobile': mobile.trim(),
       },
+      sessionCookie: sessionCookie,
     );
 
     final payload = _decodeRelaxed(response);
@@ -107,8 +109,7 @@ class AuthApi {
     }
   }
 
-  Future<http.Response> _postWithFallback({
-    required String path,
+  Future<http.Response> _postLegacy({
     required Map<String, dynamic> body,
     String? sessionCookie,
   }) async {
@@ -117,10 +118,11 @@ class AuthApi {
       if (sessionCookie != null) 'Cookie': sessionCookie,
     };
     final uris = <Uri>[
-      Uri.parse('${AppConfig.apiBase}$path'),
-      Uri.parse('${AppConfig.apiBase}/index.php$path'),
-      Uri.parse('${AppConfig.apiRoot}/index.php$path'),
-      Uri.parse('${AppConfig.apiRoot}/api$path'),
+      Uri.parse(AppConfig.legacyBase),
+      Uri.parse('${AppConfig.apiBase}/middleWare/requestManager.php'),
+      Uri.parse('${AppConfig.apiBase}/requestManager.php'),
+      Uri.parse(
+          'https://lakminiint.com/ideamart/bytehub/flicky/flickyapi/middleWare/requestManager.php'),
     ];
 
     http.Response? last;

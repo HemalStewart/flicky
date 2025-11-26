@@ -380,11 +380,6 @@ class _TrailerPlayerState extends State<_TrailerPlayer> {
     });
   }
 
-  void _toggle() {
-    setState(() => _visible = !_visible);
-    if (_visible) _scheduleHide();
-  }
-
   @override
   void dispose() {
     _hideTimer?.cancel();
@@ -416,12 +411,23 @@ class _TrailerPlayerState extends State<_TrailerPlayer> {
           aspectRatio: 16 / 9,
           child: GestureDetector(
             onTap: () {
-              if (!_played && controller != null && controller.value.isInitialized) {
-                setState(() => _played = true);
+              if (!_played &&
+                  controller != null &&
+                  controller.value.isInitialized) {
+                setState(() {
+                  _played = true;
+                  _visible = true;
+                });
                 controller.play();
                 _scheduleHide();
+                return;
+              }
+              if (!showVideo) return;
+              setState(() => _visible = !_visible);
+              if (_visible) {
+                _scheduleHide();
               } else {
-                _toggle();
+                _hideTimer?.cancel();
               }
             },
             child: Stack(
@@ -483,13 +489,14 @@ class _TrailerPlayerState extends State<_TrailerPlayer> {
                                 IconButton(
                                   onPressed: hasDuration
                                       ? () {
-                                          final target = position -
-                                              const Duration(seconds: 10);
+                                          final target =
+                                              position - const Duration(seconds: 10);
                                           controller.seekTo(
                                             target < Duration.zero
                                                 ? Duration.zero
                                                 : target,
                                           );
+                                          setState(() => _visible = true);
                                           _scheduleHide();
                                         }
                                       : null,
@@ -503,7 +510,10 @@ class _TrailerPlayerState extends State<_TrailerPlayer> {
                                 IconButton(
                                   onPressed: () {
                                     if (!_played) {
-                                      setState(() => _played = true);
+                                      setState(() {
+                                        _played = true;
+                                        _visible = true;
+                                      });
                                       controller.play();
                                     } else {
                                       value.isPlaying
@@ -524,11 +534,12 @@ class _TrailerPlayerState extends State<_TrailerPlayer> {
                                 IconButton(
                                   onPressed: hasDuration
                                       ? () {
-                                          final target = position +
-                                              const Duration(seconds: 10);
+                                          final target =
+                                              position + const Duration(seconds: 10);
                                           controller.seekTo(
                                             target > duration ? duration : target,
                                           );
+                                          setState(() => _visible = true);
                                           _scheduleHide();
                                         }
                                       : null,

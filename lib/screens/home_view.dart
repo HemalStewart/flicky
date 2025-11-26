@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/sample_data.dart';
+import '../data/content_api.dart';
 import '../models/media_item.dart';
 import '../theme/app_colors.dart';
 import '../widgets/category_chips.dart';
@@ -23,6 +23,33 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   String _activeCategory = 'Action';
+  bool _loading = true;
+  String? _error;
+  List<MediaItem> _trending = const [];
+  List<MediaItem> _movies = const [];
+  List<MediaItem> _series = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHome();
+  }
+
+  Future<void> _loadHome() async {
+    try {
+      final payload = await ContentApi().fetchHome();
+      setState(() {
+        _trending = payload.trending;
+        _movies = payload.movies;
+        _series = payload.series;
+        _error = null;
+      });
+    } catch (e) {
+      setState(() => _error = 'Could not load latest content.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   void _openDetail(BuildContext context, MediaItem item, String heroTag) {
     Navigator.push(
@@ -48,6 +75,15 @@ class _HomeViewState extends State<HomeView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (_loading)
+                      const LinearProgressIndicator(minHeight: 3),
+                    if (_error != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _error!,
+                        style: TextStyle(color: AppColors.muted, fontSize: 12),
+                      ),
+                    ],
                     StaggeredFadeSlide(
                       delay: const Duration(milliseconds: 80),
                       child: _HomeHeader(
@@ -80,27 +116,27 @@ class _HomeViewState extends State<HomeView> {
                     ),
                     const SizedBox(height: 14),
                     StaggeredFadeSlide(
-                      delay: const Duration(milliseconds: 320),
-                      child: SizedBox(
-                        height: 360,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemBuilder: (context, index) {
-                            final item = trendingItems[index];
-                            return TrendingCard(
-                              item: item,
-                              onTap: () => _openDetail(
-                                context,
-                                item,
-                                'trending-${item.imageUrl}-${item.title}',
-                              ),
-                            );
-                          },
-                          separatorBuilder: (_, i) => const SizedBox(width: 14),
-                          itemCount: trendingItems.length,
+                          delay: const Duration(milliseconds: 320),
+                          child: SizedBox(
+                            height: 360,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemBuilder: (context, index) {
+                                final item = _trending[index];
+                                return TrendingCard(
+                                  item: item,
+                                  onTap: () => _openDetail(
+                                    context,
+                                    item,
+                                    'trending-${item.imageUrl}-${item.title}',
+                                  ),
+                                );
+                              },
+                              separatorBuilder: (_, i) => const SizedBox(width: 14),
+                              itemCount: _trending.length,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
                     const SizedBox(height: 22),
                     StaggeredFadeSlide(
                       delay: const Duration(milliseconds: 380),
@@ -111,27 +147,27 @@ class _HomeViewState extends State<HomeView> {
                     ),
                     const SizedBox(height: 12),
                     StaggeredFadeSlide(
-                      delay: const Duration(milliseconds: 440),
-                      child: SizedBox(
-                        height: 240,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemBuilder: (context, index) {
-                            final item = movieItems[index];
-                            return PosterCard(
-                              item: item,
-                              onTap: () => _openDetail(
-                                context,
-                                item,
-                                'poster-${item.imageUrl}-${item.title}',
-                              ),
-                            );
-                          },
-                          separatorBuilder: (_, i) => const SizedBox(width: 16),
-                          itemCount: movieItems.length,
+                          delay: const Duration(milliseconds: 440),
+                          child: SizedBox(
+                            height: 240,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemBuilder: (context, index) {
+                                final item = _movies[index];
+                                return PosterCard(
+                                  item: item,
+                                  onTap: () => _openDetail(
+                                    context,
+                                    item,
+                                    'poster-${item.imageUrl}-${item.title}',
+                                  ),
+                                );
+                              },
+                              separatorBuilder: (_, i) => const SizedBox(width: 16),
+                              itemCount: _movies.length,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
                     const SizedBox(height: 22),
                     StaggeredFadeSlide(
                       delay: const Duration(milliseconds: 500),
@@ -142,28 +178,28 @@ class _HomeViewState extends State<HomeView> {
                     ),
                     const SizedBox(height: 12),
                     StaggeredFadeSlide(
-                      delay: const Duration(milliseconds: 560),
-                      child: SizedBox(
-                        height: 220,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemBuilder: (context, index) {
-                            final item = seriesItems[index];
-                            return PosterCard(
-                              item: item,
-                              badge: item.category,
-                              onTap: () => _openDetail(
-                                context,
-                                item,
-                                'poster-${item.imageUrl}-${item.title}',
-                              ),
-                            );
-                          },
-                          separatorBuilder: (_, i) => const SizedBox(width: 16),
-                          itemCount: seriesItems.length,
+                          delay: const Duration(milliseconds: 560),
+                          child: SizedBox(
+                            height: 220,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemBuilder: (context, index) {
+                                final item = _series[index];
+                                return PosterCard(
+                                  item: item,
+                                  badge: item.category,
+                                  onTap: () => _openDetail(
+                                    context,
+                                    item,
+                                    'poster-${item.imageUrl}-${item.title}',
+                                  ),
+                                );
+                              },
+                              separatorBuilder: (_, i) => const SizedBox(width: 16),
+                              itemCount: _series.length,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
                     const SizedBox(height: 30),
                   ],
                 ),
